@@ -8,6 +8,7 @@ using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
 using Pods.App.Logging;
+using Pods.App.Tray;
 using Pods.Core.Devices;
 using Pods.Core.Settings;
 using Serilog;
@@ -17,6 +18,10 @@ namespace Pods.App;
 public partial class App : Application
 {
     TaskbarIcon? tray;
+    TrayHover? trayHover;
+    readonly LowBatteryMonitor lowBattery = new();
+    readonly TrayCardViewModel trayCard = new();
+    bool trayLow;
     MainWindow? mainWindow;
     DispatcherQueue? ui;
 
@@ -48,10 +53,12 @@ public partial class App : Application
         ui = DispatcherQueue.GetForCurrentThread();
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
+        Headphones.Changed += OnHeadphonesChangedAnyThread;
         Headphones.Start();
         PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         tray = CreateTray();
+        OnHeadphonesChanged();
         ShowMainWindow();
     }
 
@@ -91,24 +98,50 @@ public partial class App : Application
 
         var icon = new TaskbarIcon
         {
-            ToolTipText = Strings.Get("AppDisplayName"),
-            IconSource = new BitmapImage(new Uri("ms-appx:///Assets/Tray.ico")),
+            IconSource = TrayIcon(trayLow),
             ContextMenuMode = ContextMenuMode.PopupMenu,
             ContextFlyout = menu,
             LeftClickCommand = new RelayCommand(ShowMainWindow),
             NoLeftClickDelay = true,
         };
         icon.ForceCreate();
+        trayHover = new TrayHover(icon, trayCard, ui!);
         return icon;
     }
+
+    void DisposeTray()
+    {
+        trayHover?.Dispose();
+        trayHover = null;
+        tray?.Dispose();
+        tray = null;
+    }
+
+    static BitmapImage TrayIcon(bool low) => new(new Uri(low ? "ms-appx:///Assets/TrayLow.ico" : "ms-appx:///Assets/Tray.ico"));
+
+    void OnHeadphonesChangedAnyThread() => ui?.TryEnqueue(OnHeadphonesChanged);
+
+    /// <summary>Battery or connection changed: refresh the tray card and the low dot.</summary>
+    void OnHeadphonesChanged()
+    {
+        var connected = Headphones.Current.Where(s => s.State == DeviceState.Connected).ToList();
+        lowBattery.Update(connected, ThresholdFor);
+        if (trayLow != lowBattery.AnyLow)
+        {
+            trayLow = lowBattery.AnyLow;
+            if (tray is not null) tray.IconSource = TrayIcon(trayLow);
+        }
+        trayCard.Update(connected, ThresholdFor);
+    }
+
+    int ThresholdFor(string key) => Settings.GetForDevice(SettingKeys.LowBatteryPercent, key);
 
     static MenuFlyoutItem MenuItem(string key, Action action) =>
         new() { Text = Strings.Get(key), Command = new RelayCommand(action) };
 
     void Restart()
     {
-        tray?.Dispose();
-        tray = null;
+        DisposeTray();
         Program.ReleaseInstanceKey();
         Log.CloseAndFlush();
         // Returns only if the restart could not be started.
@@ -124,9 +157,12 @@ public partial class App : Application
     void ShowDemoDevices()
     {
         if (Headphones is FakeHeadphoneSource) return;
+        Headphones.Changed -= OnHeadphonesChangedAnyThread;
         Headphones.Stop();
         Headphones = new FakeHeadphoneSource(ui!);
+        Headphones.Changed += OnHeadphonesChangedAnyThread;
         Headphones.Start();
+        OnHeadphonesChanged();
         mainWindow?.Close();
         ShowMainWindow();
     }
@@ -135,10 +171,10 @@ public partial class App : Application
     void ExitApp()
     {
         PowerManager.SystemSuspendStatusChanged -= OnSuspendStatusChanged;
+        Headphones.Changed -= OnHeadphonesChangedAnyThread;
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();
-        tray?.Dispose();
-        tray = null;
+        DisposeTray();
         mainWindow?.Close();
         Log.CloseAndFlush();
         Exit();
