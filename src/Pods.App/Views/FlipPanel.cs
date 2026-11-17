@@ -13,7 +13,10 @@ namespace Pods.App.Views;
 /// </summary>
 internal sealed partial class FlipPanel : Grid
 {
-    static readonly TimeSpan HalfTurn = TimeSpan.FromMilliseconds(125);
+    static readonly TimeSpan HalfTurn = TimeSpan.FromMilliseconds(180);
+    // One curve over the whole turn: the first half speeds up, the second slows down, so it never pauses edge-on.
+    static readonly (Vector2, Vector2) SpeedUp = (new(0.4f, 0), new(1, 1));
+    static readonly (Vector2, Vector2) SlowDown = (new(0, 0), new(0.2f, 1));
     const float Perspective = 600;
 
     public static readonly DependencyProperty FrontProperty = DependencyProperty.Register(
@@ -74,17 +77,17 @@ internal sealed partial class FlipPanel : Grid
         var outgoing = from ? Back : Front;
         var incoming = from ? Front : Back;
         SetPerspective();
-        Rotate(outgoing, 0, 90, () =>
+        Rotate(outgoing, 0, 90, SpeedUp, () =>
         {
             if (current != turn) return;
             showingBack = !from;
             Show(showingBack);
             Visual(outgoing).RotationAngleInDegrees = 0;
-            Rotate(incoming, -90, 0, () => { });
+            Rotate(incoming, -90, 0, SlowDown, () => { });
         });
     }
 
-    void Rotate(UIElement face, float from, float to, Action completed)
+    void Rotate(UIElement face, float from, float to, (Vector2 A, Vector2 B) easing, Action completed)
     {
         var visual = Visual(face);
         var size = face.ActualSize;
@@ -93,7 +96,7 @@ internal sealed partial class FlipPanel : Grid
         visual.RotationAngleInDegrees = from;
         var compositor = visual.Compositor;
         var animation = compositor.CreateScalarKeyFrameAnimation();
-        animation.InsertKeyFrame(1, to, compositor.CreateCubicBezierEasingFunction(new Vector2(0.3f, 0), new Vector2(0.7f, 1)));
+        animation.InsertKeyFrame(1, to, compositor.CreateCubicBezierEasingFunction(easing.A, easing.B));
         animation.Duration = HalfTurn;
         var batch = compositor.CreateScopedBatch(CompositionBatchTypes.Animation);
         visual.StartAnimation(nameof(Microsoft.UI.Composition.Visual.RotationAngleInDegrees), animation);
