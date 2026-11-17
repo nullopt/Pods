@@ -10,7 +10,9 @@ public sealed record MatcherOptions(short MinRssi = -60, short MaxRssi = 0, bool
 /// every 10 s and <see cref="Observe"/> for every advert of the tracked model before <see cref="Accept"/>.
 /// The selection sticks while its address stays in range, survives weak or empty windows, and
 /// hands over at once to another in-range address after <see cref="HandoverSilence"/> of silence
-/// (each pod advertises from its own address).
+/// (each pod advertises from its own address). Until the first window closes, the first in-range advert
+/// is selected at once so the card fills in without waiting; that first window then picks the strongest
+/// address afresh, and only later windows keep the selection sticky.
 /// Thread-safe: adverts and the window tick may arrive on different threads.
 /// </summary>
 public sealed class AdvertMatcher(MatcherOptions options, TimeProvider time)
@@ -23,6 +25,7 @@ public sealed class AdvertMatcher(MatcherOptions options, TimeProvider time)
     readonly Lock gate = new();
     AppleAdvert? lastAccepted;
     ulong? selected;
+    bool firstWindow = true;
     DateTimeOffset selectedSeen;
 
     public ulong? SelectedAddress { get { lock (gate) return selected; } }
@@ -56,12 +59,13 @@ public sealed class AdvertMatcher(MatcherOptions options, TimeProvider time)
                         bestAvg = avg;
                     }
                 }
-                if (!selectedInRange && best is not null)
+                if ((!selectedInRange || firstWindow) && best is not null)
                 {
                     selected = best;
                     selectedSeen = time.GetUtcNow();
                 }
                 window.Clear();
+                firstWindow = false;
             }
 
             var now = time.GetUtcNow();
@@ -76,8 +80,9 @@ public sealed class AdvertMatcher(MatcherOptions options, TimeProvider time)
         {
             var now = time.GetUtcNow();
             bool accepted;
-            if (advert.Address == selected)
+            if (advert.Address == selected || (selected is null && InRange(advert.Rssi)))
             {
+                selected = advert.Address;
                 selectedSeen = now;
                 accepted = true;
             }

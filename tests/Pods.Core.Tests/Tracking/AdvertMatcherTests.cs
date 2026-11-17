@@ -97,8 +97,9 @@ public class AdvertMatcherTests
     public void Accept_RssiWindowAcceptDoesNotMakeAddressKnown()
     {
         var m = M(byRssi: true);
-        Assert.True(m.Accept(A(2, -55)));
-        Assert.False(m.Accept(A(2, -80, b6: 0x33)));
+        Assert.True(m.Accept(A(1, -55)));              // first in-range advert: selected at once
+        Assert.True(m.Accept(A(2, -55, b6: 0x22)));    // accepted through the RSSI window only
+        Assert.False(m.Accept(A(2, -80, b6: 0x33)));   // so address 2 did not become known
     }
 
     [Fact]
@@ -108,5 +109,50 @@ public class AdvertMatcherTests
         Assert.True(m.Accept(A(1, -55)));
         Assert.True(m.Accept(A(4, -90)));            // same state as last accepted
         Assert.True(m.Accept(A(4, -90, b6: 0x33)));  // address now known
+    }
+
+    [Fact]
+    public void Accept_FirstInRangeAdvertSelectedImmediately()
+    {
+        var m = M();
+        var a = A(1, -50);
+        m.Observe(a);
+        Assert.True(m.Accept(a));
+        Assert.Equal(1UL, m.SelectedAddress);
+    }
+
+    [Fact]
+    public void Accept_WeakFirstAdvertWaitsForWindow()
+    {
+        var m = M();
+        var a = A(1, -75);
+        m.Observe(a);
+        Assert.False(m.Accept(a));
+        Assert.Null(m.SelectedAddress);
+    }
+
+    [Fact]
+    public void CloseWindow_FirstWindowReplacesInstantPickWithStrongest()
+    {
+        var m = M();
+        var weak = A(1, -58);
+        m.Observe(weak);
+        Assert.True(m.Accept(weak));
+        m.Observe(A(2, -40)); m.Observe(A(2, -42));
+        m.CloseWindow();
+        Assert.Equal(2UL, m.SelectedAddress);
+    }
+
+    [Fact]
+    public void CloseWindow_LaterWindowsKeepStickySelection()
+    {
+        var m = M();
+        var first = A(1, -58);
+        m.Observe(first);
+        m.Accept(first);
+        m.CloseWindow();                       // first window: 1 is the only in-range address
+        m.Observe(A(1, -58)); m.Observe(A(2, -40));
+        m.CloseWindow();                       // a stronger set later does not take over
+        Assert.Equal(1UL, m.SelectedAddress);
     }
 }
