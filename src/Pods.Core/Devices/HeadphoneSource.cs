@@ -68,12 +68,14 @@ public sealed class HeadphoneSource(
 
     void Request(string key, ConnectionRequest kind)
     {
+        PendingRequest request;
         lock (gate)
         {
             if (!adapterAvailable || !devices.Any(d => d.Id == key)) return;
             if (requests.TryGetValue(key, out var existing) && IsPending(existing.Value)) return;
-            requests[key] = new PendingRequest(kind,
-                time.CreateTimer(_ => Fail(key, kind), null, RequestTimeout, Timeout.InfiniteTimeSpan));
+            request = new PendingRequest(kind);
+            requests[key] = request;
+            request.Timer = time.CreateTimer(_ => Fail(key, request), null, RequestTimeout, Timeout.InfiniteTimeSpan);
         }
         Publish();
 
@@ -84,30 +86,30 @@ public sealed class HeadphoneSource(
         }
         catch (Exception)
         {
-            Fail(key, kind);
+            Fail(key, request);
             return;
         }
-        _ = FailUnlessSent(sent, key, kind);
+        _ = FailUnlessSent(sent, key, request);
     }
 
-    async Task FailUnlessSent(Task<bool> sent, string key, ConnectionRequest kind)
+    async Task FailUnlessSent(Task<bool> sent, string key, PendingRequest request)
     {
         bool ok;
         try { ok = await sent.ConfigureAwait(false); }
         catch (Exception) { ok = false; }
-        if (!ok) Fail(key, kind);
+        if (!ok) Fail(key, request);
     }
 
-    void Fail(string key, ConnectionRequest kind)
+    /// <summary>Fails this exact request if it is still pending; a late result or timer of an older request does nothing.</summary>
+    void Fail(string key, PendingRequest request)
     {
         lock (gate)
         {
-            if (!requests.TryGetValue(key, out var request) || request.Value != kind) return;
+            if (!requests.TryGetValue(key, out var current) || !ReferenceEquals(current, request) || !IsPending(request.Value)) return;
             request.Timer?.Dispose();
-            var state = published.FirstOrDefault(s => s.Key == key)?.State;
-            requests[key] = new PendingRequest(
-                kind == ConnectionRequest.Connecting ? ConnectionRequest.ConnectFailed : ConnectionRequest.DisconnectFailed,
-                Timer: null, FailedInState: state);
+            request.Timer = null;
+            request.FailedInState = published.FirstOrDefault(s => s.Key == key)?.State;
+            request.Value = request.Value == ConnectionRequest.Connecting ? ConnectionRequest.ConnectFailed : ConnectionRequest.DisconnectFailed;
         }
         Publish();
     }
@@ -258,7 +260,12 @@ public sealed class HeadphoneSource(
             ?? sameModel.FirstOrDefault()?.Id;
     }
 
-    sealed record PendingRequest(ConnectionRequest Value, ITimer? Timer, DeviceState? FailedInState = null);
+    sealed class PendingRequest(ConnectionRequest value)
+    {
+        public ConnectionRequest Value { get; set; } = value;
+        public ITimer? Timer { get; set; }
+        public DeviceState? FailedInState { get; set; }
+    }
 
     sealed class ModelStream(AdvertMatcher matcher, HeadphoneTracker tracker)
     {

@@ -394,4 +394,23 @@ public sealed class HeadphoneSourceTests : IDisposable
         time.Advance(HeadphoneSource.RequestTimeout);
         Assert.Empty(source.Current);
     }
+
+    [Fact]
+    public void LateResultOfOldRequest_DoesNotFailNewRequest()
+    {
+        var first = new TaskCompletionSource<bool>();
+        control.Result = () => first.Task;
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        time.Advance(HeadphoneSource.RequestTimeout);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+
+        control.Result = () => new TaskCompletionSource<bool>().Task;
+        source.Connect(MaxId);
+        first.SetResult(false);
+        SpinWait.SpinUntil(() => Card(MaxId).Request != ConnectionRequest.Connecting, TimeSpan.FromMilliseconds(500));
+        Assert.Equal(ConnectionRequest.Connecting, Card(MaxId).Request);
+        time.Advance(HeadphoneSource.RequestTimeout);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+    }
 }
