@@ -52,7 +52,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
 
     public bool IsWhole => !IsSplit;
 
-    /// <summary>Spins only while both pods are in the case, as on iPhone.</summary>
+    /// <summary>Earbuds spin only while both pods are in the case, as on iPhone; headphones without a case always spin.</summary>
     [ObservableProperty] public partial bool IsSpinning { get; private set; }
 
     [ObservableProperty, NotifyPropertyChangedFor(nameof(HasPodRings))]
@@ -114,7 +114,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
 
         Sheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
         IsSplit = Sheet is not null && Turntable.Cut(Sheet) is not null;
-        IsSpinning = snapshot.IsInCase;
+        IsSpinning = IsSplit ? snapshot.IsInCase : Sheet is not null;
         IsSingleBattery = snapshot.IsSingleBattery;
 
         var b = snapshot.Battery;
