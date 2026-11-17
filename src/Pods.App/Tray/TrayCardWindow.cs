@@ -24,16 +24,12 @@ internal sealed partial class TrayCardWindow : Window
         Content = view;
         // The context-menu presenter: a frameless popup that stays on top.
         var presenter = OverlappedPresenter.CreateForContextMenu();
+        presenter.SetBorderAndTitleBar(false, false);
         presenter.IsAlwaysOnTop = true;
         AppWindow.SetPresenter(presenter);
         AppWindow.IsShownInSwitchers = false;
         AppWindow.Title = Strings.Get("AppDisplayName");
-        // Rounded corners from the system, without the 1 px window border it would otherwise draw.
         hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
-        var round = DwmCornerRound;
-        DwmSetWindowAttribute(hwnd, DwmWindowCornerPreference, ref round, sizeof(int));
-        var none = DwmColorNone;
-        DwmSetWindowAttribute(hwnd, DwmBorderColor, ref none, sizeof(uint));
         view.SizeChanged += (_, _) => Place();
     }
 
@@ -43,6 +39,16 @@ internal sealed partial class TrayCardWindow : Window
         anchor = (left, top, right, bottom);
         Place();
         AppWindow.Show(activateWindow: false);
+        StyleCorners();
+    }
+
+    /// <summary>Rounded corners from the system, without the 1 px outline it draws by default. Applied once shown.</summary>
+    void StyleCorners()
+    {
+        var round = DwmCornerRound;
+        DwmSetWindowAttribute(hwnd, DwmWindowCornerPreference, ref round, sizeof(int));
+        var none = DwmColorNone;
+        DwmSetWindowAttribute(hwnd, DwmBorderColor, ref none, sizeof(uint));
     }
 
     void Place()
