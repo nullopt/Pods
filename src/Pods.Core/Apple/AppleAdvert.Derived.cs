@@ -26,7 +26,7 @@ public sealed partial record AppleAdvert
 
     /// <summary>Null unless the model supports the lid popup.</summary>
     public bool? LidPopup => !Has(AppleCapabilities.LidPopup) ? null
-        : AdvertDecoder.IsMaxFamily(Model) ? LidCounter >> 4 == 8   // Max rule unverified on hardware (SPEC §12)
+        : AdvertDecoder.IsMaxFamily(Model) ? LidCounter >> 4 == 8   // Max: measured transient on any state change, incl. leaving the case (SPEC §5.1)
         : Bit(2) && BothPresent && (LidCounter & 0x0F) <= 8;
 
     /// <summary>Null unless the model supports auto-connect.</summary>

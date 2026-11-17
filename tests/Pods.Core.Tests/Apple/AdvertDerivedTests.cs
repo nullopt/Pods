@@ -28,6 +28,18 @@ public class AdvertDerivedTests
         Assert.Equal(expected, D(Frames.Pro2((byte)status, cap: (byte)cap)).LidPopup);
 
     [Theory]
+    [InlineData(0x22, Playback.AllIn, AudioOutHint.AnyIn)]
+    [InlineData(0x02, Playback.NoneIn, AudioOutHint.NoneIn)]
+    public void Playback_Max(int status, Playback playback, AudioOutHint hint)
+    {
+        var a = D(Frames.Make(0x0a, 0x20, (byte)status, 0x09, 0x80));
+        Assert.Equal((playback, hint), (a.Playback, a.SwitchAudioOut));
+    }
+
+    [Theory]
+    [InlineData(0x83, true)]  // measured: taken out of the Smart Case
+    [InlineData(0x86, true)]  // measured: taken off the head (same transient, not distinguishable)
+    [InlineData(0x05, false)]
     [InlineData(0x80, true)]
     [InlineData(0x70, false)]
     public void LidPopup_Max(int cap, bool expected) =>

@@ -64,14 +64,23 @@ public class AdvertDecoderTests
         Assert.Equal((left, right), (a.LeftInEar, a.RightInEar));
     }
 
-    [Fact]
-    public void Decode_MaxStatusNormalisation()
+    [Theory]
+    [InlineData(0x22, true)]  // measured on head
+    [InlineData(0x02, false)] // measured off head
+    [InlineData(0x20, true)]
+    [InlineData(0x00, false)]
+    public void Decode_MaxOnHeadIsBit5(int status, bool onHead)
     {
-        var a = D(Frames.Make(0x0a, 0x20, 0x24, 0x58, 0x13));
-        Assert.Equal(0x22, a.Status);
-        Assert.True(a.PrimaryIsLeft);
-        Assert.False(a.BothPresent);
-        Assert.True(a.LeftInEar);
+        var a = D(Frames.Make(0x0a, 0x20, (byte)status, 0x09, 0x80));
+        Assert.Equal(status, a.Status);
+        Assert.Equal((onHead, onHead), (a.LeftInEar, a.RightInEar));
+    }
+
+    [Fact]
+    public void Decode_MaxHasSingleBattery()
+    {
+        var a = D(Frames.Make(0x0a, 0x20, 0x02, 0x09, 0x80));
+        Assert.Equal(new PodBattery(95, null, null, false, false, false), a.Battery);
     }
 
     [Fact]

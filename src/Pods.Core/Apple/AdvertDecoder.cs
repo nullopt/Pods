@@ -14,36 +14,37 @@ public static class AdvertDecoder
 
         var modelId = $"{data[3]:x2}{data[4]:x2}";
         var model = ModelCatalog.Find(modelId);
-        var isMax = IsMaxFamily(model);
-
         var status = data[5];
-        if (isMax)
-        {
-            // AirPods Max status mapping; unverified on hardware (SPEC §12).
-            status = status switch { 0x24 => 0x22, 0x04 => 0x02, 0x20 => 0x22, 0x00 => 0x02, _ => status };
-        }
-
-        bool Bit(int i) => ((status >> i) & 1) == 1;
-        var flag = Bit(6) == Bit(5);
-        var rightInEar = flag ? Bit(1) : Bit(3);
-        var leftInEar = flag ? Bit(3) : Bit(1);
-        var primaryIsLeft = Bit(5);
-        var bothPresent = Bit(0);
-        if (isMax)
-        {
-            primaryIsLeft = true;
-            bothPresent = false;
-        }
-
         byte b6 = data[6], b7 = data[7];
-        int high = b6 >> 4, low = b6 & 0x0F;
-        var battery = new PodBattery(
-            Left: Percent(primaryIsLeft ? low : high),
-            Right: Percent(primaryIsLeft ? high : low),
-            Case: Percent(b7 & 0x0F),
-            LeftCharging: (b7 & (primaryIsLeft ? 0x10 : 0x20)) != 0,
-            RightCharging: (b7 & (primaryIsLeft ? 0x20 : 0x10)) != 0,
-            CaseCharging: (b7 & 0x40) != 0);
+        bool Bit(int i) => ((status >> i) & 1) == 1;
+
+        bool leftInEar, rightInEar, bothPresent, primaryIsLeft;
+        PodBattery battery;
+        if (IsMaxFamily(model))
+        {
+            // AirPods Max (measured, SPEC §5.1): bit 5 = on head, one battery in the low nibble of b6.
+            // Both cups follow the on-head state; there is no second cup or case value.
+            leftInEar = rightInEar = Bit(5);
+            bothPresent = true;
+            primaryIsLeft = true;
+            battery = new PodBattery(Percent(b6 & 0x0F), null, null, false, false, false);
+        }
+        else
+        {
+            var flag = Bit(6) == Bit(5);
+            rightInEar = flag ? Bit(1) : Bit(3);
+            leftInEar = flag ? Bit(3) : Bit(1);
+            primaryIsLeft = Bit(5);
+            bothPresent = Bit(0);
+            int high = b6 >> 4, low = b6 & 0x0F;
+            battery = new PodBattery(
+                Left: Percent(primaryIsLeft ? low : high),
+                Right: Percent(primaryIsLeft ? high : low),
+                Case: Percent(b7 & 0x0F),
+                LeftCharging: (b7 & (primaryIsLeft ? 0x10 : 0x20)) != 0,
+                RightCharging: (b7 & (primaryIsLeft ? 0x20 : 0x10)) != 0,
+                CaseCharging: (b7 & 0x40) != 0);
+        }
 
         // AirPods Max: colour code "11" is reported for the colour catalogued as "31". Unverified on hardware (SPEC §12).
         var colour = $"{data[9]:x2}";
