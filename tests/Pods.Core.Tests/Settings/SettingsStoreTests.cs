@@ -196,14 +196,4 @@ public sealed class SettingsStoreTests : IDisposable
     [Fact]
     public void GlobalOnlySetting_RejectsDeviceOverride() =>
         Assert.Throws<ArgumentException>(() => SettingsStore.Load(dir).SetForDevice(SettingKeys.LogLevel, Dev, "Debug"));
-
-    [Fact]
-    public void CardCollapsed_DefaultsFalse_AndIsPerDevice()
-    {
-        var s = SettingsStore.Load(dir);
-        Assert.False(s.GetForDevice(SettingKeys.CardCollapsed, Dev));
-        s.SetForDevice(SettingKeys.CardCollapsed, Dev, true);
-        Assert.True(s.GetForDevice(SettingKeys.CardCollapsed, Dev));
-        Assert.False(s.GetForDevice(SettingKeys.CardCollapsed, "ffffffffffff"));
-    }
 }

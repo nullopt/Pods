@@ -25,9 +25,6 @@
   <data name="RequestConnectFailed" xml:space="preserve"><value>Couldn't connect</value></data>
   <data name="RequestDisconnectFailed" xml:space="preserve"><value>Couldn't disconnect</value></data>
   <data name="StateMultipleConnection" xml:space="preserve"><value>Connected to several devices</value></data>
-  <data name="CardCaseSuffix" xml:space="preserve"><value>Case</value></data>
-  <data name="CardCollapse" xml:space="preserve"><value>Collapse</value></data>
-  <data name="CardExpand" xml:space="preserve"><value>Expand</value></data>
   <data name="TrayNoHeadphones" xml:space="preserve"><value>No headphones connected</value></data>
   <data name="TrayPartBuds" xml:space="preserve"><value>{0} buds</value></data>
   <data name="TrayPartLeft" xml:space="preserve"><value>{0} L</value></data>

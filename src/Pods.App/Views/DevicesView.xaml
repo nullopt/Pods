@@ -7,15 +7,15 @@
     FontFamily="{StaticResource PodsFont}">
 
     <UserControl.Resources>
-        <!-- A battery ring with its percentage below, as on the iPhone case-open card. -->
+        <!-- A 44 px battery ring with its percentage below, as on the iPhone case-open card. -->
         <DataTemplate x:Key="RingTemplate" x:DataType="devices:BatteryViewModel">
-            <StackPanel Spacing="8" HorizontalAlignment="Center">
-                <Grid Width="{x:Bind RingSize}" Height="{x:Bind RingSize}" HorizontalAlignment="Center">
-                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="{x:Bind RingSize}" Height="{x:Bind RingSize}"
+            <StackPanel Spacing="6" HorizontalAlignment="Center">
+                <Grid Width="44" Height="44" HorizontalAlignment="Center">
+                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="44" Height="44"
                                   Value="{x:Bind Value, Mode=OneWay}"
                                   Background="{ThemeResource PodsRingTrack}" Foreground="{ThemeResource PodsGreen}"
                                   Visibility="{x:Bind IsNormal, Mode=OneWay}" />
-                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="{x:Bind RingSize}" Height="{x:Bind RingSize}"
+                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="44" Height="44"
                                   Value="{x:Bind Value, Mode=OneWay}"
                                   Background="{ThemeResource PodsRingTrack}" Foreground="{ThemeResource PodsRed}"
                                   Visibility="{x:Bind IsLow, Mode=OneWay}" />
@@ -24,10 +24,10 @@
                           StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center"
                           Visibility="{x:Bind IsCharging, Mode=OneWay}" />
                 </Grid>
-                <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
-                    <Grid Width="19" Height="19" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
+                <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
+                    <Grid Width="16" Height="16" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
                         <Ellipse Fill="{ThemeResource PodsPrimaryText}" />
-                        <TextBlock Text="{x:Bind Letter}" FontSize="12" FontWeight="Bold" TextLineBounds="Tight"
+                        <TextBlock Text="{x:Bind Letter}" FontSize="10" FontWeight="Bold" TextLineBounds="Tight"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="{ThemeResource PodsCardBackground}" />
                     </Grid>
@@ -39,163 +39,117 @@
                         <Rectangle Width="8" Height="2.6" RadiusX="1.3" RadiusY="1.3" Margin="0,4.3,0,0"
                                    VerticalAlignment="Top" Fill="{ThemeResource PodsCardBackground}" />
                     </Grid>
-                    <TextBlock Text="{x:Bind Text, Mode=OneWay}" FontSize="17" VerticalAlignment="Center"
+                    <TextBlock Text="{x:Bind Text, Mode=OneWay}" FontSize="13" VerticalAlignment="Center"
                                Foreground="{ThemeResource PodsPrimaryText}" />
                 </StackPanel>
             </StackPanel>
         </DataTemplate>
 
-        <!-- A collapsed card's row, as in the macOS Bluetooth menu. -->
-        <DataTemplate x:Key="RowTemplate" x:DataType="devices:PartRowViewModel">
-            <Grid Height="40" ColumnSpacing="12">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="40" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <Border HorizontalAlignment="Center" VerticalAlignment="Center">
-                    <views:TurntableView Part="{x:Bind Part}" FrameHeight="28" Sheet="{x:Bind Sheet, Mode=OneWay}" />
-                </Border>
-                <TextBlock Grid.Column="1" Text="{x:Bind Title, Mode=OneWay}" FontSize="14" VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" Foreground="{ThemeResource PodsPrimaryText}" />
-                <TextBlock Grid.Column="2" Text="{x:Bind Text, Mode=OneWay}" FontSize="14" VerticalAlignment="Center"
-                           Foreground="{ThemeResource PodsSecondaryText}" />
-                <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Width="30" Height="14" CornerRadius="4" BorderThickness="1" Padding="2"
-                            BorderBrush="{ThemeResource PodsSecondaryText}">
-                        <Grid HorizontalAlignment="Left">
-                            <Rectangle Width="{x:Bind FillWidth, Mode=OneWay}" RadiusX="2" RadiusY="2"
-                                       Fill="{ThemeResource PodsGreen}" Visibility="{x:Bind IsNormal, Mode=OneWay}" />
-                            <Rectangle Width="{x:Bind FillWidth, Mode=OneWay}" RadiusX="2" RadiusY="2"
-                                       Fill="{ThemeResource PodsRed}" Visibility="{x:Bind IsLow, Mode=OneWay}" />
-                        </Grid>
-                    </Border>
-                    <Rectangle Width="2" Height="5" Margin="1,0,0,0" Fill="{ThemeResource PodsSecondaryText}" />
-                </StackPanel>
-            </Grid>
-        </DataTemplate>
     </UserControl.Resources>
 
-    <Grid Background="{ThemeResource PodsPageBackground}">
-        <ScrollViewer>
-            <StackPanel Padding="20,44,20,20" Spacing="16">
-                <TextBlock x:Uid="DevicesTitle" FontSize="30" FontWeight="Bold"
-                           Foreground="{ThemeResource PodsPrimaryText}" />
+    <!-- The flyout: a header, then device tiles two to a row (condensed iPhone case-open cards). -->
+    <StackPanel Background="{ThemeResource PodsPageBackground}" Padding="12" Spacing="10" MinWidth="240">
+        <Grid Margin="4,0,4,0">
+            <TextBlock x:Uid="DevicesTitle" FontSize="18" FontWeight="SemiBold"
+                       Foreground="{ThemeResource PodsPrimaryText}" />
+        </Grid>
 
-                <TextBlock x:Uid="DevicesEmpty" TextWrapping="Wrap" FontSize="15"
-                           Foreground="{ThemeResource PodsSecondaryText}"
-                           Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
+        <TextBlock x:Uid="DevicesEmpty" TextWrapping="Wrap" FontSize="13" MaxWidth="320" Margin="4,0,4,4"
+                   HorizontalAlignment="Left" Foreground="{ThemeResource PodsSecondaryText}"
+                   Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
 
-                <TextBlock x:Uid="DevicesBluetoothOff" TextWrapping="Wrap" FontSize="15"
-                           Foreground="{ThemeResource PodsSecondaryText}"
-                           Visibility="{x:Bind ViewModel.IsAdapterUnavailable, Mode=OneWay}" />
+        <TextBlock x:Uid="DevicesBluetoothOff" TextWrapping="Wrap" FontSize="13" MaxWidth="320" Margin="4,0,4,4"
+                   HorizontalAlignment="Left" Foreground="{ThemeResource PodsSecondaryText}"
+                   Visibility="{x:Bind ViewModel.IsAdapterUnavailable, Mode=OneWay}" />
 
-                <ItemsRepeater ItemsSource="{x:Bind ViewModel.Cards}">
-                    <ItemsRepeater.Layout>
-                        <StackLayout Spacing="12" />
-                    </ItemsRepeater.Layout>
-                    <ItemsRepeater.ItemTemplate>
-                        <DataTemplate x:DataType="devices:DeviceCardViewModel">
-                            <Border Background="{ThemeResource PodsCardBackground}" CornerRadius="18" Padding="16,12,12,16">
-                                <Grid>
-                                    <Button HorizontalAlignment="Right" VerticalAlignment="Top" Canvas.ZIndex="1"
-                                            Width="32" Height="32" Padding="0" CornerRadius="16"
-                                            Background="Transparent" BorderThickness="0"
-                                            Command="{x:Bind ToggleCollapsedCommand}"
-                                            ToolTipService.ToolTip="{x:Bind ChevronTip, Mode=OneWay}">
-                                        <FontIcon Glyph="{x:Bind ChevronGlyph, Mode=OneWay}" FontSize="12"
-                                                  Foreground="{ThemeResource PodsSecondaryText}" />
-                                    </Button>
+        <!-- The grid layout gives every item the first one's size, so tiles have a fixed size. -->
+        <ItemsRepeater ItemsSource="{x:Bind ViewModel.Cards}">
+            <ItemsRepeater.Layout>
+                <UniformGridLayout MaximumRowsOrColumns="2" MinColumnSpacing="10" MinRowSpacing="10" />
+            </ItemsRepeater.Layout>
+            <ItemsRepeater.ItemTemplate>
+                <DataTemplate x:DataType="devices:DeviceCardViewModel">
+                    <Grid Width="216" Height="270" Padding="14" RowSpacing="10" CornerRadius="14"
+                          Background="{ThemeResource PodsCardBackground}">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
 
-                                    <!-- Collapsed: one row per part; clicking expands. -->
-                                    <ItemsRepeater ItemsSource="{x:Bind Rows}" Margin="0,0,40,0" Background="Transparent"
-                                                   Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
-                                                   Visibility="{x:Bind IsCollapsed, Mode=OneWay}"
-                                                   Tapped="{x:Bind ExpandFromRows}"
-                                                   ItemTemplate="{StaticResource RowTemplate}" />
+                        <StackPanel Spacing="1">
+                            <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="15" FontWeight="SemiBold"
+                                       TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       Foreground="{ThemeResource PodsPrimaryText}" />
+                            <TextBlock Text="{x:Bind StateText, Mode=OneWay}" FontSize="12" TextAlignment="Center"
+                                       Foreground="{ThemeResource PodsSecondaryText}" />
+                        </StackPanel>
 
-                                    <!-- Expanded: the iPhone case-open card. -->
-                                    <StackPanel Spacing="18" Padding="4,6,4,0" Visibility="{x:Bind IsExpanded, Mode=OneWay}">
-                                        <StackPanel Spacing="2" Margin="36,0,36,0" HorizontalAlignment="Center">
-                                            <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="20" FontWeight="SemiBold"
-                                                       TextAlignment="Center" TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource PodsPrimaryText}" />
-                                            <TextBlock Text="{x:Bind StateText, Mode=OneWay}" FontSize="13" TextAlignment="Center"
-                                                       Foreground="{ThemeResource PodsSecondaryText}" />
-                                        </StackPanel>
-
-                                        <Grid HorizontalAlignment="Center" ColumnSpacing="28"
-                                              Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
-                                              Visibility="{x:Bind IsSplit, Mode=OneWay}">
-                                            <Grid.ColumnDefinitions>
-                                                <ColumnDefinition Width="Auto" />
-                                                <ColumnDefinition Width="Auto" />
-                                            </Grid.ColumnDefinitions>
-                                            <StackPanel Spacing="16">
-                                                <Border Height="110" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Left" Sheet="{x:Bind Sheet, Mode=OneWay}"
-                                                                         IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
-                                                </Border>
-                                                <Grid HorizontalAlignment="Center">
-                                                    <ContentControl Content="{x:Bind Buds}" ContentTemplate="{StaticResource RingTemplate}"
-                                                                    Visibility="{x:Bind ShowCombinedBuds, Mode=OneWay}" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="4"
-                                                                Visibility="{x:Bind ShowSeparateBuds, Mode=OneWay}">
-                                                        <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}">
-                                                            <ContentControl.RenderTransform>
-                                                                <TranslateTransform X="-5" />
-                                                            </ContentControl.RenderTransform>
-                                                        </ContentControl>
-                                                        <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
-                                                    </StackPanel>
-                                                </Grid>
-                                            </StackPanel>
-                                            <StackPanel Grid.Column="1" Spacing="16">
-                                                <Border Height="110" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Right" Sheet="{x:Bind Sheet, Mode=OneWay}"
-                                                                         IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
-                                                </Border>
-                                                <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}"
-                                                                HorizontalAlignment="Center" />
-                                            </StackPanel>
-                                        </Grid>
-
-                                        <StackPanel Spacing="16" HorizontalAlignment="Center"
-                                                    Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
-                                                    Visibility="{x:Bind IsWhole, Mode=OneWay}">
-                                            <Border HorizontalAlignment="Center">
-                                                <views:TurntableView Sheet="{x:Bind Sheet, Mode=OneWay}"
-                                                                     IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
-                                            </Border>
-                                            <ContentControl Content="{x:Bind Single}" ContentTemplate="{StaticResource RingTemplate}"
-                                                            HorizontalAlignment="Center"
-                                                            Visibility="{x:Bind IsSingleBattery, Mode=OneWay}" />
-                                            <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center"
-                                                        Visibility="{x:Bind HasPodRings, Mode=OneWay}">
-                                                <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}" />
-                                                <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
-                                                <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}" />
-                                            </StackPanel>
-                                        </StackPanel>
-
-                                        <Grid HorizontalAlignment="Center">
-                                            <Button x:Uid="CardConnect" Style="{StaticResource AccentButtonStyle}"
-                                                    Command="{x:Bind ConnectCommand}"
-                                                    IsEnabled="{x:Bind CanAct, Mode=OneWay}"
-                                                    Visibility="{x:Bind ShowConnect, Mode=OneWay}" />
-                                            <Button x:Uid="CardDisconnect"
-                                                    Command="{x:Bind DisconnectCommand}"
-                                                    IsEnabled="{x:Bind CanAct, Mode=OneWay}"
-                                                    Visibility="{x:Bind ShowDisconnect, Mode=OneWay}" />
-                                        </Grid>
+                        <!-- Earbuds and case side by side, each over its rings. -->
+                        <Grid Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" ColumnSpacing="12"
+                              Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
+                              Visibility="{x:Bind IsSplit, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel Spacing="10">
+                                <Border Height="70" HorizontalAlignment="Center">
+                                    <views:TurntableView Part="Left" FrameHeight="70" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                         IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
+                                </Border>
+                                <Grid HorizontalAlignment="Center">
+                                    <ContentControl Content="{x:Bind Buds}" ContentTemplate="{StaticResource RingTemplate}"
+                                                    Visibility="{x:Bind ShowCombinedBuds, Mode=OneWay}" />
+                                    <StackPanel Orientation="Horizontal" Spacing="4"
+                                                Visibility="{x:Bind ShowSeparateBuds, Mode=OneWay}">
+                                        <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}" />
+                                        <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
                                     </StackPanel>
                                 </Grid>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1" Spacing="10">
+                                <Border Height="70" HorizontalAlignment="Center">
+                                    <views:TurntableView Part="Right" FrameHeight="70" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                         IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
+                                </Border>
+                                <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}"
+                                                HorizontalAlignment="Center" />
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Whole headphones (or a model without split artwork) over their rings. -->
+                        <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                    Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
+                                    Visibility="{x:Bind IsWhole, Mode=OneWay}">
+                            <Border Height="90" HorizontalAlignment="Center">
+                                <views:TurntableView FrameHeight="90" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                     IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                             </Border>
-                        </DataTemplate>
-                    </ItemsRepeater.ItemTemplate>
-                </ItemsRepeater>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+                            <ContentControl Content="{x:Bind Single}" ContentTemplate="{StaticResource RingTemplate}"
+                                            HorizontalAlignment="Center"
+                                            Visibility="{x:Bind IsSingleBattery, Mode=OneWay}" />
+                            <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center"
+                                        Visibility="{x:Bind HasPodRings, Mode=OneWay}">
+                                <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}" />
+                                <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
+                                <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}" />
+                            </StackPanel>
+                        </StackPanel>
+
+                        <Grid Grid.Row="2" HorizontalAlignment="Center">
+                            <Button x:Uid="CardConnect" Style="{StaticResource AccentButtonStyle}"
+                                    Command="{x:Bind ConnectCommand}"
+                                    IsEnabled="{x:Bind CanAct, Mode=OneWay}"
+                                    Visibility="{x:Bind ShowConnect, Mode=OneWay}" />
+                            <Button x:Uid="CardDisconnect"
+                                    Command="{x:Bind DisconnectCommand}"
+                                    IsEnabled="{x:Bind CanAct, Mode=OneWay}"
+                                    Visibility="{x:Bind ShowDisconnect, Mode=OneWay}" />
+                        </Grid>
+                    </Grid>
+                </DataTemplate>
+            </ItemsRepeater.ItemTemplate>
+        </ItemsRepeater>
+    </StackPanel>
 </UserControl>

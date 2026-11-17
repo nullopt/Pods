@@ -6,15 +6,12 @@ namespace Pods.App.Devices;
 /// <summary>What sits before a ring's percentage: nothing, a circled L or R, or a case glyph.</summary>
 internal enum BatteryBadge { None, Left, Right, Case }
 
-/// <summary>One battery ring on an expanded card.</summary>
+/// <summary>One battery ring on a device tile.</summary>
 internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableObject
 {
     public bool HasLetter { get; } = badge is BatteryBadge.Left or BatteryBadge.Right;
     public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
     public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
-
-    /// <summary>Ring diameter in DIPs: separate L / R rings are smaller so each fits under its earbud.</summary>
-    public double RingSize { get; } = badge is BatteryBadge.Left or BatteryBadge.Right ? 44 : 56;
 
     [ObservableProperty] public partial string Text { get; private set; } = BatteryText.Format(null);
     [ObservableProperty] public partial double Value { get; private set; }
