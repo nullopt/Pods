@@ -25,7 +25,14 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
 
     public void Dispose() => source.Changed -= OnChanged;
 
-    void OnChanged(HeadphoneSnapshot snapshot) => ui.TryEnqueue(() => Apply(snapshot));
+    /// <summary>
+    /// Events from different threads can arrive out of order, so each one only triggers a re-read
+    /// of the source's latest snapshot for that device.
+    /// </summary>
+    void OnChanged(HeadphoneSnapshot snapshot) => ui.TryEnqueue(() =>
+    {
+        if (source.Current.FirstOrDefault(s => s.Key == snapshot.Key) is { } latest) Apply(latest);
+    });
 
     void Apply(HeadphoneSnapshot snapshot)
     {
