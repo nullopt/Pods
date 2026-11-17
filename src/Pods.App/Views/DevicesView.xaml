@@ -29,6 +29,7 @@
                                 <StackPanel Spacing="16">
                                     <views:TurntableView HorizontalAlignment="Center"
                                                          Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
+                                                         IsSpinning="True"
                                                          Sheet="{x:Bind TurntableSheet, Mode=OneWay}" />
                                     <StackPanel Spacing="2">
                                         <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="17" FontWeight="SemiBold"
