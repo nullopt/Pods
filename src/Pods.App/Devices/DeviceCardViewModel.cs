@@ -79,28 +79,41 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
     [RelayCommand]
     void Flip() => IsFlipped = !IsFlipped;
 
-    /// <summary>"App default (N%)" first, then the percentages.</summary>
-    [ObservableProperty] public partial IReadOnlyList<ThresholdChoice> ThresholdChoices { get; private set; } = [];
+    /// <summary>The low battery warning, 5-50%; equal to the app default means "follow the default", as the store keeps it.</summary>
+    [ObservableProperty] public partial double Threshold { get; set; }
 
-    [ObservableProperty] public partial int SelectedThresholdIndex { get; set; } = -1;
+    /// <summary>"30%", or "20% (app default)" while the device follows the default.</summary>
+    [ObservableProperty] public partial string ThresholdText { get; private set; } = "";
 
-    partial void OnSelectedThresholdIndexChanged(int value)
+    /// <summary>The device has its own value, so it can go back to the default.</summary>
+    [ObservableProperty] public partial bool HasOwnThreshold { get; private set; }
+
+    partial void OnThresholdChanged(double value)
     {
-        if (syncingThreshold || value < 0 || value >= ThresholdChoices.Count) return;
-        var percent = ThresholdChoices[value].Percent;
-        try
-        {
-            if (percent is { } p) settings.SetForDevice(SettingKeys.LowBatteryPercent, Key, p);
-            else settings.ResetToGlobal(SettingKeys.LowBatteryPercent, Key);
-        }
+        if (syncingThreshold) return;
+        var percent = (int)Math.Round(value);
+        Save(() => settings.SetForDevice(SettingKeys.LowBatteryPercent, Key, percent));
+        ThresholdText = $"{percent}%";
+        settingsChanged();
+    }
+
+    [RelayCommand]
+    void UseAppDefault()
+    {
+        Save(() => settings.ResetToGlobal(SettingKeys.LowBatteryPercent, Key));
+        settingsChanged();
+    }
+
+    static void Save(Action write)
+    {
+        try { write(); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             Log.Warning(e, "Saving the low battery setting failed");
         }
-        settingsChanged();
     }
 
-    /// <summary>Rebuilds the choices only when the default or the override changed: updates arrive every second.</summary>
+    /// <summary>Re-reads the threshold only when the default or the override changed: updates arrive every second.</summary>
     void SyncThreshold()
     {
         var global = settings.Get(SettingKeys.LowBatteryPercent);
@@ -112,10 +125,10 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         syncingThreshold = true;
         try
         {
-            var percents = SettingChoices.LowBatteryPercents(overridden ?? global);
-            ThresholdChoices = [new(null, string.Format(Strings.Get("ThresholdAppDefault"), global)),
-                .. percents.Select(p => new ThresholdChoice(p, $"{p}%"))];
-            SelectedThresholdIndex = overridden is { } o ? 1 + percents.ToList().IndexOf(o) : 0;
+            // Kept inside the slider's range so it never pushes a corrected value back as a change.
+            Threshold = Math.Clamp(overridden ?? global, SettingChoices.LowBatteryMin, SettingChoices.LowBatteryMax);
+            ThresholdText = overridden is { } o ? $"{o}%" : string.Format(Strings.Get("ThresholdDefault"), global);
+            HasOwnThreshold = overridden is not null;
         }
         finally
         {
@@ -161,6 +174,3 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         SyncThreshold();
     }
 }
-
-/// <summary>One entry of the low battery drop-down; a null percent means "use the app default".</summary>
-internal sealed record ThresholdChoice(int? Percent, string Label);

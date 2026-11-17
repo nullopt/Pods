@@ -11,7 +11,6 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
     readonly SettingsStore settings;
     readonly string dataFolder;
     readonly Action settingsChanged;
-    readonly IReadOnlyList<int> percents;
 
     /// <param name="settingsChanged">Called after the default threshold is written, so devices on the default follow.</param>
     public AppSettingsViewModel(SettingsStore settings, string dataFolder, Action settingsChanged)
@@ -20,10 +19,9 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
         this.dataFolder = dataFolder;
         this.settingsChanged = settingsChanged;
 
-        var threshold = settings.Get(SettingKeys.LowBatteryPercent);
-        percents = SettingChoices.LowBatteryPercents(threshold);
-        ThresholdChoices = [.. percents.Select(p => $"{p}%")];
-        selectedThresholdIndex = percents.ToList().IndexOf(threshold);
+        // Kept inside the slider's range so it never pushes a corrected value back as a change.
+        threshold = Math.Clamp(settings.Get(SettingKeys.LowBatteryPercent), SettingChoices.LowBatteryMin, SettingChoices.LowBatteryMax);
+        ThresholdText = $"{(int)threshold}%";
 
         var level = settings.Get(SettingKeys.LogLevel);
         var index = SettingChoices.LogLevels.ToList().FindIndex(l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
@@ -31,21 +29,26 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
         selectedLogLevelIndex = index >= 0 ? index : SettingChoices.LogLevels.ToList().IndexOf("Warning");
     }
 
-    public IReadOnlyList<string> ThresholdChoices { get; }
     public IReadOnlyList<string> LogLevels => SettingChoices.LogLevels;
     public string Version { get; } = string.Format(Strings.Get("AppVersion"), typeof(App).Assembly.GetName().Version?.ToString(3));
 
-    int selectedThresholdIndex;
-    public int SelectedThresholdIndex
+    double threshold;
+    /// <summary>The default low battery warning, 5-50%.</summary>
+    public double Threshold
     {
-        get => selectedThresholdIndex;
+        get => threshold;
         set
         {
-            if (value < 0 || !SetProperty(ref selectedThresholdIndex, value)) return;
-            Save(() => settings.SetGlobal(SettingKeys.LowBatteryPercent, percents[value]));
+            if (!SetProperty(ref threshold, value)) return;
+            var percent = (int)Math.Round(value);
+            Save(() => settings.SetGlobal(SettingKeys.LowBatteryPercent, percent));
+            ThresholdText = $"{percent}%";
             settingsChanged();
         }
     }
+
+    string thresholdText = "";
+    public string ThresholdText { get => thresholdText; private set => SetProperty(ref thresholdText, value); }
 
     int selectedLogLevelIndex;
     public int SelectedLogLevelIndex

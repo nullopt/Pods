@@ -2,14 +2,19 @@ using System.Numerics;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Automation;
+using Microsoft.UI.Xaml.Automation.Peers;
 using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 
 namespace Pods.App.Views;
 
 /// <summary>
 /// Two faces in one place; setting <see cref="IsFlipped"/> turns the panel about its vertical axis
 /// to show the back (a short 3D turn). Both faces stay laid out, so the panel keeps the size of the
-/// larger one and does not jump when it turns; the hidden face is transparent and ignores input.
+/// larger one and does not jump when it turns. Each face sits in a host that, while hidden, is
+/// transparent, disabled (out of the Tab order) and hidden from screen readers.
 /// </summary>
 internal sealed partial class FlipPanel : Grid
 {
@@ -28,6 +33,7 @@ internal sealed partial class FlipPanel : Grid
     public static readonly DependencyProperty IsFlippedProperty = DependencyProperty.Register(
         nameof(IsFlipped), typeof(bool), typeof(FlipPanel), new PropertyMetadata(false, (d, _) => ((FlipPanel)d).Turn()));
 
+    readonly ContentControl frontHost = Host(), backHost = Host();
     bool showingBack;
     int turn;   // bumped by every change, so a stale half-turn's completion does nothing
 
@@ -35,7 +41,16 @@ internal sealed partial class FlipPanel : Grid
     {
         // A loaded panel turns; one that is not loaded yet (or is reused for another item) just shows the right face.
         Loaded += (_, _) => Snap();
+        Children.Add(frontHost);
+        Children.Add(backHost);
     }
+
+    static ContentControl Host() => new()
+    {
+        IsTabStop = false,
+        HorizontalContentAlignment = HorizontalAlignment.Stretch,
+        VerticalContentAlignment = VerticalAlignment.Stretch,
+    };
 
     public UIElement? Front { get => (UIElement?)GetValue(FrontProperty); set => SetValue(FrontProperty, value); }
     public UIElement? Back { get => (UIElement?)GetValue(BackProperty); set => SetValue(BackProperty, value); }
@@ -43,9 +58,8 @@ internal sealed partial class FlipPanel : Grid
 
     void SetFaces()
     {
-        Children.Clear();
-        if (Front is { } front) Children.Add(front);
-        if (Back is { } back) Children.Add(back);
+        frontHost.Content = Front;
+        backHost.Content = Back;
         Snap();
     }
 
@@ -54,8 +68,13 @@ internal sealed partial class FlipPanel : Grid
     {
         turn++;
         showingBack = IsFlipped;
-        foreach (var face in Faces()) Visual(face).StopAnimation(nameof(Microsoft.UI.Composition.Visual.RotationAngleInDegrees));
-        foreach (var face in Faces()) Visual(face).RotationAngleInDegrees = 0;
+        foreach (var host in (UIElement[])[frontHost, backHost])
+        {
+            Visual(host).StopAnimation(nameof(Microsoft.UI.Composition.Visual.RotationAngleInDegrees));
+            Visual(host).RotationAngleInDegrees = 0;
+        }
+        // Perspective only while turning: left on, it would also distort turns of panels nested inside.
+        Visual(this).TransformMatrix = Matrix4x4.Identity;
         Show(showingBack);
     }
 
@@ -74,16 +93,22 @@ internal sealed partial class FlipPanel : Grid
         if (from == IsFlipped) return;
 
         var current = turn;
-        var outgoing = from ? Back : Front;
-        var incoming = from ? Front : Back;
+        var outgoing = from ? backHost : frontHost;
+        var incoming = from ? frontHost : backHost;
         SetPerspective();
         Rotate(outgoing, 0, 90, SpeedUp, () =>
         {
             if (current != turn) return;
+            var hadFocus = ContainsFocus(outgoing);
             showingBack = !from;
             Show(showingBack);
             Visual(outgoing).RotationAngleInDegrees = 0;
-            Rotate(incoming, -90, 0, SlowDown, () => { });
+            // Focus on the face that turned away would vanish: follow it to the new face.
+            if (hadFocus && FocusManager.FindFirstFocusableElement(incoming) is Control first) first.Focus(FocusState.Programmatic);
+            Rotate(incoming, -90, 0, SlowDown, () =>
+            {
+                if (current == turn) Visual(this).TransformMatrix = Matrix4x4.Identity;
+            });
         });
     }
 
@@ -115,22 +140,24 @@ internal sealed partial class FlipPanel : Grid
 
     void Show(bool back)
     {
-        if (Front is { } front)
-        {
-            front.Opacity = back ? 0 : 1;
-            front.IsHitTestVisible = !back;
-        }
-        if (Back is { } b)
-        {
-            b.Opacity = back ? 1 : 0;
-            b.IsHitTestVisible = back;
-        }
+        SetShown(frontHost, !back);
+        SetShown(backHost, back);
     }
 
-    IEnumerable<UIElement> Faces()
+    static void SetShown(ContentControl host, bool shown)
     {
-        if (Front is { } front) yield return front;
-        if (Back is { } back) yield return back;
+        host.Opacity = shown ? 1 : 0;
+        host.IsHitTestVisible = shown;
+        host.IsEnabled = shown;
+        AutomationProperties.SetAccessibilityView(host, shown ? AccessibilityView.Content : AccessibilityView.Raw);
+    }
+
+    bool ContainsFocus(UIElement host)
+    {
+        if (XamlRoot is null) return false;
+        for (var e = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject; e is not null; e = VisualTreeHelper.GetParent(e))
+            if (e == host) return true;
+        return false;
     }
 
     static Visual Visual(UIElement element) => ElementCompositionPreview.GetElementVisual(element);
