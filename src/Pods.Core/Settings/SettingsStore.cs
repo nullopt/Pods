@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 namespace Pods.Core.Settings;
 
 /// <summary>
-/// Global settings plus per-device overrides (SPEC §8): <c>settings.json</c> holds global values,
+/// Global settings plus per-device overrides: <c>settings.json</c> holds global values,
 /// <c>devices/&lt;id&gt;.json</c> holds only a device's overrides. Every change is written at once and
 /// atomically. A corrupt file is moved aside to <c>.bad</c>; a file from a newer version is read but
 /// never written. Thread-safe.

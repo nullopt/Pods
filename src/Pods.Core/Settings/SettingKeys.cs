@@ -1,6 +1,6 @@
 namespace Pods.Core.Settings;
 
-/// <summary>Settings keys and defaults, SPEC §8.1 (device-scoped) and §5.12 (global only).</summary>
+/// <summary>Settings keys and defaults: device-scoped ones can be overridden per device, the rest are global only.</summary>
 public static class SettingKeys
 {
     static readonly SettingsJsonContext Json = SettingsJsonContext.Default;

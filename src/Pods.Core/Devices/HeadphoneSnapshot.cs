@@ -2,7 +2,7 @@ using Pods.Core.Apple;
 
 namespace Pods.Core.Devices;
 
-/// <summary>What a device card shows. Battery values are already held through short unknown gaps (SPEC §5.4).</summary>
+/// <summary>What a device card shows. Battery values are already held through short unknown gaps.</summary>
 public sealed record HeadphoneSnapshot(
     string Key,
     string Name,

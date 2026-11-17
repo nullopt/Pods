@@ -2,7 +2,7 @@ using System.Text.Json.Serialization.Metadata;
 
 namespace Pods.Core.Settings;
 
-/// <summary>A typed settings key. Device-scoped settings may have per-device overrides (SPEC §8.1).</summary>
+/// <summary>A typed settings key. Device-scoped settings may have per-device overrides.</summary>
 public sealed class Setting<T>(string key, T defaultValue, JsonTypeInfo<T> typeInfo, bool deviceScoped)
 {
     public string Key { get; } = key;

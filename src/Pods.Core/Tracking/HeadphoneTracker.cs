@@ -4,7 +4,7 @@ namespace Pods.Core.Tracking;
 
 /// <summary>
 /// Per-device state from accepted adverts: battery with a 30 s hold for readings that turn
-/// unknown (SPEC §5.4), playback debounced by 1 s (SPEC §5.5), and staleness after 60 s.
+/// unknown, playback debounced by 1 s, and staleness after 60 s.
 /// Events are raised outside the internal lock, on the caller's or the timer's thread.
 /// </summary>
 public sealed class HeadphoneTracker(TimeProvider time) : IDisposable

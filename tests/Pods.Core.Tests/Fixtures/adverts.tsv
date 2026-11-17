@@ -1,4 +1,4 @@
-# Real AirPods Pro 2 adverts captured 2026-11-17 (spikes/AdvertSpike). Expected values are what was physically true;
+# Real AirPods Pro 2 adverts captured 2026-11-17. Expected values are what was physically true;
 # battery from iOS rounded to the 10% step (iOS 100/100/97 and 96 -> 100/100/95). Address column dropped.
 # frame-hex	left	right	case	inL	inR	playback
 # Both pods in case, lid open - right pod broadcasting (13:15:05)

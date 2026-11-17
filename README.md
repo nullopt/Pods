@@ -3,48 +3,27 @@
 AirPods companion for Windows: battery, ear detection and quick connect for Apple AirPods
 and Apple-chip Beats, as a lightweight tray app. No drivers, no admin rights.
 
-> **Status: early development.** The BLE decoding and device-tracking core is done and
-> tested against real AirPods Pro 2 and AirPods Max adverts. The tray app runs and shows
-> nearby devices' battery; connection control, ear detection and the popup come next.
-> See `PLAN.md` for the roadmap.
+> **Early development.** Pods runs in the tray and shows the battery of nearby AirPods.
+> The features below are in progress.
 
-## Planned for v1
+## Features
 
 - Left / right / case battery with charging state, in the tray and a lid-open popup
 - Ear detection: pause when you take an AirPod out, resume when you put it back
-- Auto-connect when you open the case; audio output switching
-- Global hotkeys, low-battery toasts, notification read-out into the earbuds
+- Connect from the tray, a hotkey or by opening the case; audio output switching
+- Low-battery notifications
 
-Noise-control modes, gesture remapping and exact 1% battery need a kernel driver and are
-planned for v2.
-
-## Docs
-
-| Path | What it is |
-|---|---|
-| `SPEC.md` | v1 behaviour spec |
-| `PLAN.md` | roadmap, stack, estimates, risks |
-| `docs/protocol-apple.md` | Apple proximity-advert measurements on real hardware |
-| `docs/superpowers/plans/` | executable, test-first implementation plans |
-
-## Building from source
+## Building
 
 Requires the .NET 10 SDK on Windows 10 2004 or later (x64). No Visual Studio, Windows SDK,
-Developer Mode or certificate is needed: Pods is an ordinary unpackaged app.
+Developer Mode or certificate is needed.
 
 ```
-dotnet run --project src/Pods.App     # the tray app
-dotnet test Pods.slnx                 # unit tests
+dotnet run --project src/Pods.App
+dotnet test
 ```
 
 Settings and logs live in `%LOCALAPPDATA%\Pods`.
-
-Watch live adverts from AirPods near the PC (open the case):
-
-```
-dotnet run --project spikes/AdvertSpike            # stop with Enter
-dotnet run --project spikes/AdvertSpike -- --seconds 120
-```
 
 ## Licence
 

@@ -7,7 +7,7 @@ namespace Pods.Core.Devices;
 /// Turns adverts into device snapshots: one matcher and tracker per catalogued model until Phase 2
 /// links adverts to paired devices. A device appears once its matcher has accepted an advert, and
 /// shows <see cref="DeviceState.Searching"/> with its last values while stale. The window tick runs
-/// only between <see cref="Start"/> and <see cref="Stop"/> (SPEC §11).
+/// only between <see cref="Start"/> and <see cref="Stop"/> to keep idle cost at zero.
 /// </summary>
 public sealed class AdvertHeadphoneSource(IAppleAdvertSource adverts, TimeProvider time, MatcherOptions? options = null)
     : IHeadphoneSource, IDisposable

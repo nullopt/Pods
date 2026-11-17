@@ -7,7 +7,7 @@ public enum AppleCapabilities { None = 0, EarDetection = 1, LidPopup = 2, AutoCo
 /// <param name="Name">Display name.</param>
 public sealed record AppleModel(string Id, string Name, AppleCapabilities Capabilities);
 
-/// <summary>Apple and Beats models recognised from proximity adverts (SPEC §2).</summary>
+/// <summary>Apple and Beats models recognised from proximity adverts.</summary>
 public static class ModelCatalog
 {
     const AppleCapabilities E = AppleCapabilities.EarDetection | AppleCapabilities.LidPopup | AppleCapabilities.AutoConnect;
@@ -15,7 +15,7 @@ public static class ModelCatalog
     const AppleCapabilities L = AppleCapabilities.LidPopup;
     const AppleCapabilities N = AppleCapabilities.None;
 
-    /// <summary>AirPods Max family IDs; their adverts need the status mapping in SPEC §5.1.</summary>
+    /// <summary>AirPods Max family IDs; their adverts need a different status mapping.</summary>
     public static IReadOnlySet<string> MaxFamilyIds { get; } = new HashSet<string>(StringComparer.Ordinal) { "0a20", "1f20", "2d20" };
 
     public static IReadOnlyList<AppleModel> All { get; } =

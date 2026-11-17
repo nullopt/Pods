@@ -6,7 +6,7 @@ public enum Playback { AllIn, Partial, NoneIn }
 
 public enum AudioOutHint { AnyIn, NoneIn }
 
-/// <summary>Values derived from the decoded advert, SPEC §5.1 "Derived values".</summary>
+/// <summary>Values derived from the decoded advert.</summary>
 public sealed partial record AppleAdvert
 {
     AppleCapabilities Capabilities => Model?.Capabilities ?? AppleCapabilities.None;
@@ -26,7 +26,7 @@ public sealed partial record AppleAdvert
 
     /// <summary>Null unless the model supports the lid popup.</summary>
     public bool? LidPopup => !Has(AppleCapabilities.LidPopup) ? null
-        : AdvertDecoder.IsMaxFamily(Model) ? LidCounter >> 4 == 8   // Max: measured transient on any state change, incl. leaving the case (SPEC §5.1)
+        : AdvertDecoder.IsMaxFamily(Model) ? LidCounter >> 4 == 8   // Max: measured transient on any state change, incl. leaving the case
         : Bit(2) && BothPresent && (LidCounter & 0x0F) <= 8;
 
     /// <summary>Null unless the model supports auto-connect.</summary>

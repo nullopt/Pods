@@ -2,15 +2,15 @@ using Pods.Core.Apple;
 
 namespace Pods.Core.Tracking;
 
-/// <param name="KnownAddressTtl">How long a known address survives; null = 15 min (SPEC §5.2).</param>
+/// <param name="KnownAddressTtl">How long a known address survives; null = 15 min.</param>
 public sealed record MatcherOptions(short MinRssi = -60, short MaxRssi = 0, bool SearchByRssi = false, TimeSpan? KnownAddressTtl = null);
 
 /// <summary>
-/// Picks one device's rotating advert address (SPEC §5.2). The owner calls <see cref="CloseWindow"/>
+/// Picks one device's rotating advert address. The owner calls <see cref="CloseWindow"/>
 /// every 10 s and <see cref="Observe"/> for every advert of the tracked model before <see cref="Accept"/>.
 /// The selection sticks while its address stays in range, survives weak or empty windows, and
 /// hands over at once to another in-range address after <see cref="HandoverSilence"/> of silence
-/// (each pod advertises from its own address; docs/protocol-apple.md).
+/// (each pod advertises from its own address).
 /// Thread-safe: adverts and the window tick may arrive on different threads.
 /// </summary>
 public sealed class AdvertMatcher(MatcherOptions options, TimeProvider time)

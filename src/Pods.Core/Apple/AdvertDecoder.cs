@@ -1,6 +1,6 @@
 namespace Pods.Core.Apple;
 
-/// <summary>Decodes Apple proximity-pairing (type 0x07) manufacturer data, SPEC §5.1.</summary>
+/// <summary>Decodes Apple proximity-pairing (type 0x07) manufacturer data.</summary>
 public static class AdvertDecoder
 {
     public const int BatteryOffset = 5;
@@ -22,7 +22,7 @@ public static class AdvertDecoder
         PodBattery battery;
         if (IsMaxFamily(model))
         {
-            // AirPods Max (measured, SPEC §5.1): bit 5 = on head, one battery in the low nibble of b6,
+            // AirPods Max (measured): bit 5 = on head, one battery in the low nibble of b6,
             // charging = b7 bit 4. Both cups follow the on-head state; there is no second cup or case value.
             leftInEar = rightInEar = Bit(5);
             bothPresent = true;
@@ -46,7 +46,7 @@ public static class AdvertDecoder
                 CaseCharging: (b7 & 0x40) != 0);
         }
 
-        // AirPods Max: colour code "11" is reported for the colour catalogued as "31". Unverified on hardware (SPEC §12).
+        // AirPods Max: colour code "11" is reported for the colour catalogued as "31". Unverified on hardware.
         var colour = $"{data[9]:x2}";
         if (modelId == "0a20" && colour == "11") colour = "31";
 

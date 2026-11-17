@@ -24,7 +24,7 @@ public partial class App : Application
     /// <summary>The running app, or null before <see cref="Application.Start"/> has created it.</summary>
     public static App? Instance => Current as App;
 
-    /// <summary>%LOCALAPPDATA%\Pods: settings and logs (SPEC §8).</summary>
+    /// <summary>%LOCALAPPDATA%\Pods: settings and logs.</summary>
     public static string DataFolder { get; } =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pods");
 

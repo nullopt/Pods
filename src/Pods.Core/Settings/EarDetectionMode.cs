@@ -1,4 +1,4 @@
 namespace Pods.Core.Settings;
 
-/// <summary>SPEC §5.5 <c>earDetection</c>.</summary>
+/// <summary>Values of the <c>earDetection</c> setting.</summary>
 public enum EarDetectionMode { PlayPause, Off }

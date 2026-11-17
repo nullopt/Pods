@@ -9,7 +9,7 @@ namespace Pods.App.Devices;
 
 /// <summary>
 /// Apple proximity-pairing adverts from the BLE watcher. The OS filters on the byte pattern
-/// <c>4C 00 07</c> (SPEC §5.1), so only type-0x07 Apple frames reach this code.
+/// <c>4C 00 07</c>, so only type-0x07 Apple frames reach this code.
 /// </summary>
 internal sealed class BleAdvertSource : IAppleAdvertSource
 {
