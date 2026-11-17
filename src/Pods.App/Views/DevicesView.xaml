@@ -28,9 +28,14 @@
             <Setter Property="Maximum" Value="50" />
             <Setter Property="StepFrequency" Value="5" />
             <Setter Property="SnapsTo" Value="StepValues" />
+            <!-- Arrow keys move one step, Page Up / Down two; the default would be 1% and 10%. -->
+            <Setter Property="SmallChange" Value="5" />
+            <Setter Property="LargeChange" Value="10" />
             <Setter Property="ThumbToolTipValueConverter" Value="{StaticResource PercentConverter}" />
             <Setter Property="IsFocusEngagementEnabled" Value="False" />
             <Setter Property="UseSystemFocusVisuals" Value="True" />
+            <!-- Clear of the step dots along the bottom edge. -->
+            <Setter Property="FocusVisualMargin" Value="-4" />
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Slider">
