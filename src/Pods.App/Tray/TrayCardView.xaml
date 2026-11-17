@@ -30,10 +30,14 @@
                                 <Border Height="30" HorizontalAlignment="Center" VerticalAlignment="Center">
                                     <views:TurntableView Part="{x:Bind Part}" Sheet="{x:Bind Sheet}" FrameHeight="30" />
                                 </Border>
-                                <!-- Charging bolt over the top of the ring, as in the macOS widget. -->
-                                <FontIcon Glyph="&#xE945;" FontSize="13" Foreground="{ThemeResource PodsGreen}"
-                                          VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,-6,0,0"
-                                          Visibility="{x:Bind IsCharging}" />
+                                <!-- Solid bolt sitting on the top of the ring. A card-coloured outline behind it cuts a gap
+                                     in the ring; strokes are centred, so the outline is a separate layer to stay outside the bolt. -->
+                                <Grid Width="17" Height="22" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,-9,0,0"
+                                      Visibility="{x:Bind IsCharging}">
+                                    <Path Data="M10,2.5 L3,12 L8,12 L7,19.5 L14,9 L9,9 Z" Stroke="{ThemeResource PodsCardBackground}"
+                                          StrokeThickness="5" StrokeLineJoin="Round" />
+                                    <Path Data="M10,2.5 L3,12 L8,12 L7,19.5 L14,9 L9,9 Z" Fill="{ThemeResource PodsGreen}" />
+                                </Grid>
                             </Grid>
                             <TextBlock Text="{x:Bind Text}" FontSize="17" HorizontalAlignment="Center"
                                        Foreground="{ThemeResource PodsPrimaryText}" />

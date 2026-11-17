@@ -19,8 +19,10 @@
                                   Value="{x:Bind Value, Mode=OneWay}"
                                   Background="{ThemeResource PodsRingTrack}" Foreground="{ThemeResource PodsRed}"
                                   Visibility="{x:Bind IsLow, Mode=OneWay}" />
-                    <FontIcon Glyph="&#xE945;" FontSize="18" Foreground="{ThemeResource PodsGreen}"
-                              Visibility="{x:Bind IsCharging, Mode=OneWay}" />
+                    <!-- Solid charging bolt (our own shape). -->
+                    <Path Data="M7.5,0 L0.5,9.5 L5.5,9.5 L4.5,17 L11.5,6.5 L6.5,6.5 Z" Width="12" Height="17" Stretch="Uniform" Fill="{ThemeResource PodsGreen}"
+                          StrokeLineJoin="Round" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          Visibility="{x:Bind IsCharging, Mode=OneWay}" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
                     <Grid Width="19" Height="19" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
