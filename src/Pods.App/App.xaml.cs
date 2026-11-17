@@ -107,7 +107,7 @@ public partial class App : Application
             flyout.Activate();
             return;
         }
-        flyoutDevices = new DevicesViewModel(Headphones, Settings, ui!);
+        flyoutDevices = new DevicesViewModel(Headphones, Settings, ui!, OnSettingsChanged);
         flyout = new TrayFlyoutWindow(new DevicesView(flyoutDevices));
         flyout.Dismissed += OnFlyoutClosed;
         if (trayHover is not null) trayHover.Suspended = true;
@@ -117,6 +117,16 @@ public partial class App : Application
         if (rect is { } r) flyout.ShowAbove(r.Left, r.Top, r.Right, r.Bottom);
         else flyout.ShowAbove(work.X + work.Width - 1, work.Y + work.Height, work.X + work.Width, work.Y + work.Height);
     }
+
+    /// <summary>
+    /// A setting was written from the flyout: refresh the tray dot, hover card and alerts, and the tiles.
+    /// Queued, since it is called from inside a drop-down's selection change.
+    /// </summary>
+    void OnSettingsChanged() => ui?.TryEnqueue(() =>
+    {
+        OnHeadphonesChanged();
+        flyoutDevices?.Refresh();
+    });
 
     void OnFlyoutClosed()
     {

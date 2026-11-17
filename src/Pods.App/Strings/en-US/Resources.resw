@@ -17,6 +17,12 @@
   <data name="StateConnected" xml:space="preserve"><value>Connected</value></data>
   <data name="StateSearchingError" xml:space="preserve"><value>Bluetooth is off</value></data>
   <data name="DevicesBluetoothOff.Text" xml:space="preserve"><value>Bluetooth is off or unavailable. Turn it on to see your devices.</value></data>
+  <data name="ThresholdAppDefault" xml:space="preserve"><value>App default ({0}%)</value></data>
+  <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery warning</value></data>
+  <data name="TileSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings for this device</value></data>
+  <data name="TileSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings for this device</value></data>
+  <data name="TileBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Back</value></data>
+  <data name="TileBack.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Back</value></data>
   <data name="CardConnect.Content" xml:space="preserve"><value>Connect</value></data>
   <data name="CardDisconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
   <data name="RequestConnecting" xml:space="preserve"><value>Connecting…</value></data>

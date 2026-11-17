@@ -4,22 +4,30 @@ using Pods.App.Views;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Settings;
+using Serilog;
 
 namespace Pods.App.Devices;
 
 /// <summary>
 /// One device tile, a condensed iPhone case-open card: earbuds and case as separate images (cut from
-/// one turntable sheet) with a ring under each, or the whole headphones over their rings.
+/// one turntable sheet) with a ring under each, or the whole headphones over their rings. Its back
+/// holds the device's settings.
 /// </summary>
 internal sealed partial class DeviceCardViewModel : ObservableObject
 {
     readonly IHeadphoneSource source;
     readonly SettingsStore settings;
+    readonly Action settingsChanged;
+    (int Default, int? Override) shownThreshold = (-1, null);
+    bool syncingThreshold;
 
-    public DeviceCardViewModel(HeadphoneSnapshot snapshot, IHeadphoneSource source, SettingsStore settings, bool adapterAvailable)
+    /// <param name="settingsChanged">Called after a setting is written, so everything showing it can refresh.</param>
+    public DeviceCardViewModel(HeadphoneSnapshot snapshot, IHeadphoneSource source, SettingsStore settings, bool adapterAvailable,
+        Action settingsChanged)
     {
         this.source = source;
         this.settings = settings;
+        this.settingsChanged = settingsChanged;
         Key = snapshot.Key;
         Update(snapshot, adapterAvailable);
     }
@@ -65,6 +73,56 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
     /// <summary>False while a request is pending or Bluetooth is off.</summary>
     [ObservableProperty] public partial bool CanAct { get; private set; }
 
+    /// <summary>The tile shows its back: this device's settings.</summary>
+    [ObservableProperty] public partial bool IsFlipped { get; private set; }
+
+    [RelayCommand]
+    void Flip() => IsFlipped = !IsFlipped;
+
+    /// <summary>"App default (N%)" first, then the percentages.</summary>
+    [ObservableProperty] public partial IReadOnlyList<ThresholdChoice> ThresholdChoices { get; private set; } = [];
+
+    [ObservableProperty] public partial int SelectedThresholdIndex { get; set; } = -1;
+
+    partial void OnSelectedThresholdIndexChanged(int value)
+    {
+        if (syncingThreshold || value < 0 || value >= ThresholdChoices.Count) return;
+        var percent = ThresholdChoices[value].Percent;
+        try
+        {
+            if (percent is { } p) settings.SetForDevice(SettingKeys.LowBatteryPercent, Key, p);
+            else settings.ResetToGlobal(SettingKeys.LowBatteryPercent, Key);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Warning(e, "Saving the low battery setting failed");
+        }
+        settingsChanged();
+    }
+
+    /// <summary>Rebuilds the choices only when the default or the override changed: updates arrive every second.</summary>
+    void SyncThreshold()
+    {
+        var global = settings.Get(SettingKeys.LowBatteryPercent);
+        int? overridden = settings.IsOverridden(SettingKeys.LowBatteryPercent, Key)
+            ? settings.GetForDevice(SettingKeys.LowBatteryPercent, Key)
+            : null;
+        if (shownThreshold == (global, overridden)) return;
+        shownThreshold = (global, overridden);
+        syncingThreshold = true;
+        try
+        {
+            var percents = SettingChoices.LowBatteryPercents(overridden ?? global);
+            ThresholdChoices = [new(null, string.Format(Strings.Get("ThresholdAppDefault"), global)),
+                .. percents.Select(p => new ThresholdChoice(p, $"{p}%"))];
+            SelectedThresholdIndex = overridden is { } o ? 1 + percents.ToList().IndexOf(o) : 0;
+        }
+        finally
+        {
+            syncingThreshold = false;
+        }
+    }
+
     [RelayCommand]
     void Connect() => source.Connect(Key);
 
@@ -100,5 +158,9 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         int? single = left ?? right;
         var singleCharging = left is null ? rightCharging : leftCharging;
         Single.Update(single, singleCharging, threshold);
+        SyncThreshold();
     }
 }
+
+/// <summary>One entry of the low battery drop-down; a null percent means "use the app default".</summary>
+internal sealed record ThresholdChoice(int? Percent, string Label);

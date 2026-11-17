@@ -12,9 +12,12 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
     readonly IHeadphoneSource source;
     readonly SettingsStore settings;
     readonly DispatcherQueue ui;
+    readonly Action settingsChanged;
 
-    public DevicesViewModel(IHeadphoneSource source, SettingsStore settings, DispatcherQueue ui)
+    /// <param name="settingsChanged">Called after a setting is written (see <see cref="Refresh"/>).</param>
+    public DevicesViewModel(IHeadphoneSource source, SettingsStore settings, DispatcherQueue ui, Action settingsChanged)
     {
+        this.settingsChanged = settingsChanged;
         this.source = source;
         this.settings = settings;
         this.ui = ui;
@@ -32,6 +35,9 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
 
     public void Dispose() => source.Changed -= OnChanged;
 
+    /// <summary>Re-reads every card, e.g. after a threshold changed.</summary>
+    public void Refresh() => Sync();
+
     /// <summary>Events can arrive out of order from different threads, so each one re-reads the whole list.</summary>
     void OnChanged() => ui.TryEnqueue(Sync);
 
@@ -46,7 +52,7 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
         {
             var snapshot = current[i];
             var index = IndexOf(snapshot.Key);
-            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot, source, settings, adapterAvailable));
+            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot, source, settings, adapterAvailable, settingsChanged));
             else
             {
                 if (index != i) Cards.Move(index, i);
