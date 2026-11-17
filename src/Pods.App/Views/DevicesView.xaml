@@ -58,11 +58,17 @@
 
     </UserControl.Resources>
 
-    <!-- The flyout: a header, then device tiles two to a row (condensed iPhone case-open cards). -->
+    <!-- The flyout: a header, then device tiles two to a row; its back holds the app settings. -->
+    <views:FlipPanel IsFlipped="{x:Bind ViewModel.IsSettingsShown, Mode=OneWay}">
+     <views:FlipPanel.Front>
     <StackPanel Background="{ThemeResource PodsPageBackground}" Padding="12" Spacing="10" MinWidth="240">
-        <Grid Margin="4,0,4,0">
-            <TextBlock x:Uid="DevicesTitle" FontSize="18" FontWeight="SemiBold"
+        <Grid Margin="4,0,-6,0">
+            <TextBlock x:Uid="DevicesTitle" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
                        Foreground="{ThemeResource PodsPrimaryText}" />
+            <Button x:Uid="FlyoutSettings" HorizontalAlignment="Right" Style="{StaticResource PodsIconButton}"
+                    Command="{x:Bind ViewModel.ToggleSettingsCommand}">
+                <FontIcon Glyph="&#xE713;" FontSize="15" />
+            </Button>
         </Grid>
 
         <TextBlock x:Uid="DevicesEmpty" TextWrapping="Wrap" FontSize="13" MaxWidth="320" Margin="4,0,4,4"
@@ -204,4 +210,32 @@
             </ItemsRepeater.ItemTemplate>
         </ItemsRepeater>
     </StackPanel>
+     </views:FlipPanel.Front>
+
+     <views:FlipPanel.Back>
+    <StackPanel Background="{ThemeResource PodsPageBackground}" Padding="12" Spacing="10">
+        <Grid ColumnSpacing="4" Margin="-6,0,4,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Uid="FlyoutBack" Style="{StaticResource PodsIconButton}" Command="{x:Bind ViewModel.ToggleSettingsCommand}">
+                <FontIcon Glyph="&#xE72B;" FontSize="14" />
+            </Button>
+            <TextBlock x:Uid="SettingsTitle" Grid.Column="1" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                       Foreground="{ThemeResource PodsPrimaryText}" />
+        </Grid>
+        <StackPanel Spacing="6" Padding="12" CornerRadius="14" Background="{ThemeResource PodsCardBackground}">
+            <TextBlock x:Uid="AppLowBattery" FontSize="13" Foreground="{ThemeResource PodsSecondaryText}" />
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.AppSettings.ThresholdChoices}"
+                      SelectedIndex="{x:Bind ViewModel.AppSettings.SelectedThresholdIndex, Mode=TwoWay}" />
+            <TextBlock x:Uid="AppLogLevel" FontSize="13" Margin="0,8,0,0" Foreground="{ThemeResource PodsSecondaryText}" />
+            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.AppSettings.LogLevels}"
+                      SelectedIndex="{x:Bind ViewModel.AppSettings.SelectedLogLevelIndex, Mode=TwoWay}" />
+        </StackPanel>
+        <TextBlock Text="{x:Bind ViewModel.AppSettings.Version}" FontSize="12" Margin="4,0,4,0"
+                   Foreground="{ThemeResource PodsSecondaryText}" />
+    </StackPanel>
+     </views:FlipPanel.Back>
+    </views:FlipPanel>
 </UserControl>

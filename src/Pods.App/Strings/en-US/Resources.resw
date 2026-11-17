@@ -23,6 +23,14 @@
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Back</value></data>
   <data name="TileBack.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Back</value></data>
+  <data name="SettingsTitle.Text" xml:space="preserve"><value>Settings</value></data>
+  <data name="AppLowBattery.Text" xml:space="preserve"><value>Low battery warning (default)</value></data>
+  <data name="AppLogLevel.Text" xml:space="preserve"><value>Log level</value></data>
+  <data name="AppVersion" xml:space="preserve"><value>Version {0}</value></data>
+  <data name="FlyoutSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings</value></data>
+  <data name="FlyoutSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings</value></data>
+  <data name="FlyoutBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Back</value></data>
+  <data name="FlyoutBack.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Back</value></data>
   <data name="CardConnect.Content" xml:space="preserve"><value>Connect</value></data>
   <data name="CardDisconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
   <data name="RequestConnecting" xml:space="preserve"><value>Connecting…</value></data>

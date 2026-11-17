@@ -1,7 +1,9 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using Microsoft.UI.Dispatching;
 using Pods.Core.Devices;
+using Pods.App.Settings;
 using Pods.Core.Settings;
 
 namespace Pods.App.Devices;
@@ -18,6 +20,7 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
     public DevicesViewModel(IHeadphoneSource source, SettingsStore settings, DispatcherQueue ui, Action settingsChanged)
     {
         this.settingsChanged = settingsChanged;
+        AppSettings = new AppSettingsViewModel(settings, App.DataFolder, settingsChanged);
         this.source = source;
         this.settings = settings;
         this.ui = ui;
@@ -26,6 +29,15 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
     }
 
     public ObservableCollection<DeviceCardViewModel> Cards { get; } = [];
+
+    /// <summary>The back of the flyout.</summary>
+    public AppSettingsViewModel AppSettings { get; }
+
+    /// <summary>The flyout shows its back: app settings.</summary>
+    [ObservableProperty] public partial bool IsSettingsShown { get; private set; }
+
+    [RelayCommand]
+    void ToggleSettings() => IsSettingsShown = !IsSettingsShown;
 
     /// <summary>No paired device to show while Bluetooth works.</summary>
     [ObservableProperty] public partial bool IsEmpty { get; private set; } = true;
