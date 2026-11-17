@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Pods.Core/Pods.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Pods.Core.Tests/Pods.Core.Tests.csproj" />
+  </Folder>
+</Solution>
