@@ -14,7 +14,7 @@ public static class SettingKeys
     public static readonly Setting<bool> SwitchOutputOnConnect = new("switchOutputOnConnect", false, Json.Boolean, true);
     public static readonly Setting<string?> OutOfEarOutputDevice = new("outOfEarOutputDevice", null, Json.String, true);
     public static readonly Setting<int?> ConnectVolume = new("connectVolume", null, Json.NullableInt32, true);
-    public static readonly Setting<int> LowBatteryPercent = new("lowBatteryPercent", 30, Json.Int32, true);
+    public static readonly Setting<int> LowBatteryPercent = new("lowBatteryPercent", 20, Json.Int32, true);
     public static readonly Setting<bool> KeepAudioAwake = new("keepAudioAwake", false, Json.Boolean, true);
     public static readonly Setting<bool> WindowsBatteryFallback = new("windowsBatteryFallback", false, Json.Boolean, true);
     public static readonly Setting<bool> SearchByRssi = new("searchByRssi", false, Json.Boolean, true);

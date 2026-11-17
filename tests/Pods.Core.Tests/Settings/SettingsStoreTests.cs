@@ -18,7 +18,7 @@ public sealed class SettingsStoreTests : IDisposable
     public void Defaults_WhenNoFiles()
     {
         var s = SettingsStore.Load(dir);
-        Assert.Equal(30, s.Get(SettingKeys.LowBatteryPercent));
+        Assert.Equal(20, s.Get(SettingKeys.LowBatteryPercent));
         Assert.Equal(EarDetectionMode.PlayPause, s.GetForDevice(SettingKeys.EarDetection, Dev));
         Assert.True(s.GetForDevice(SettingKeys.PauseOnDisconnect, Dev));
         Assert.Null(s.GetForDevice(SettingKeys.ConnectVolume, Dev));
@@ -120,7 +120,7 @@ public sealed class SettingsStoreTests : IDisposable
     {
         File.WriteAllText(SettingsFile, "{not json");
         var s = SettingsStore.Load(dir);
-        Assert.Equal(30, s.Get(SettingKeys.LowBatteryPercent));
+        Assert.Equal(20, s.Get(SettingKeys.LowBatteryPercent));
         Assert.Equal("{not json", File.ReadAllText(SettingsFile + ".bad"));
         Assert.NotEmpty(s.Warnings);
         Assert.False(s.IsReadOnly);
@@ -137,7 +137,7 @@ public sealed class SettingsStoreTests : IDisposable
     {
         File.WriteAllText(SettingsFile, content);
         var s = SettingsStore.Load(dir);
-        Assert.Equal(30, s.Get(SettingKeys.LowBatteryPercent));
+        Assert.Equal(20, s.Get(SettingKeys.LowBatteryPercent));
         Assert.Equal(content, File.ReadAllText(SettingsFile + ".bad"));
         Assert.NotEmpty(s.Warnings);
     }
@@ -172,7 +172,7 @@ public sealed class SettingsStoreTests : IDisposable
     {
         File.WriteAllText(SettingsFile, """{"version":1,"values":{"lowBatteryPercent":"abc","earDetection":"Sideways"}}""");
         var s = SettingsStore.Load(dir);
-        Assert.Equal(30, s.Get(SettingKeys.LowBatteryPercent));
+        Assert.Equal(20, s.Get(SettingKeys.LowBatteryPercent));
         Assert.Equal(EarDetectionMode.PlayPause, s.Get(SettingKeys.EarDetection));
     }
 
