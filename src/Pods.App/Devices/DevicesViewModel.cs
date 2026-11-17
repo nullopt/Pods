@@ -35,10 +35,10 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
     /// <summary>Events can arrive out of order from different threads, so each one re-reads the whole list.</summary>
     void OnChanged() => ui.TryEnqueue(Sync);
 
-    /// <summary>Updates, adds and removes cards so they match the source, in its order.</summary>
+    /// <summary>Updates, adds and removes cards so they match the source, connected devices first.</summary>
     void Sync()
     {
-        var current = source.Current;
+        var current = DeviceOrder.ConnectedFirst(source.Current);
         var adapterAvailable = source.IsAdapterAvailable;
         for (var i = Cards.Count - 1; i >= 0; i--)
             if (!current.Any(s => s.Key == Cards[i].Key)) Cards.RemoveAt(i);
