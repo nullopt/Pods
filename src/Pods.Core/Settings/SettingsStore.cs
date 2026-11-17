@@ -132,19 +132,35 @@ public sealed partial class SettingsStore
     {
         if (!File.Exists(path)) return new SettingsFile(path, valuesKey, [], ReadOnly: false);
 
-        JsonObject doc;
+        var name = Path.GetFileName(path);
+        string text;
         try
         {
-            doc = JsonNode.Parse(File.ReadAllText(path)) as JsonObject ?? throw new JsonException("Not a JSON object.");
+            text = File.ReadAllText(path);
         }
-        catch (JsonException e)
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            File.Move(path, path + ".bad", overwrite: true);
-            warnings.Add($"{Path.GetFileName(path)} was unreadable ({e.Message}); moved to .bad and defaults used.");
+            // Locked or inaccessible: use defaults in memory and never write over the file.
+            warnings.Add($"{name} could not be read ({e.Message}); defaults used and changes will not be saved.");
+            return new SettingsFile(path, valuesKey, [], ReadOnly: true);
+        }
+
+        var (doc, version, problem) = Parse(text, valuesKey);
+        if (problem is not null)
+        {
+            try
+            {
+                File.Move(path, path + ".bad", overwrite: true);
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+            {
+                warnings.Add($"{name} is invalid ({problem}) and could not be moved aside; defaults used and changes will not be saved.");
+                return new SettingsFile(path, valuesKey, [], ReadOnly: true);
+            }
+            warnings.Add($"{name} was invalid ({problem}); moved to .bad and defaults used.");
             return new SettingsFile(path, valuesKey, [], ReadOnly: false);
         }
 
-        var version = doc["version"] is JsonValue v && v.TryGetValue(out int n) ? n : 0;
         if (version > CurrentVersion)
         {
             warnings.Add($"{Path.GetFileName(path)} is from a newer version ({version}); it will not be changed.");
@@ -152,6 +168,33 @@ public sealed partial class SettingsStore
         }
         for (var i = version; i < CurrentVersion; i++) doc = Migrations[i](doc);
         return new SettingsFile(path, valuesKey, Values(doc, valuesKey), ReadOnly: false);
+    }
+
+    /// <summary>
+    /// A valid file is a JSON object with an optional non-negative integer "version" (missing = 0)
+    /// and an object under <paramref name="valuesKey"/>. Anything else is reported as a problem.
+    /// </summary>
+    static (JsonObject Doc, int Version, string? Problem) Parse(string text, string valuesKey)
+    {
+        JsonObject? doc;
+        try
+        {
+            doc = JsonNode.Parse(text) as JsonObject;
+        }
+        catch (JsonException e)
+        {
+            return ([], 0, e.Message);
+        }
+        if (doc is null) return ([], 0, "not a JSON object");
+
+        var version = 0;
+        if (doc.TryGetPropertyValue("version", out var node))
+        {
+            if (node is not JsonValue value || !value.TryGetValue(out version) || version < 0)
+                return (doc, 0, "\"version\" is not a non-negative integer");
+        }
+        if (doc[valuesKey] is not JsonObject) return (doc, version, $"\"{valuesKey}\" is missing or not an object");
+        return (doc, version, null);
     }
 
     static JsonObject Values(JsonObject doc, string valuesKey) =>

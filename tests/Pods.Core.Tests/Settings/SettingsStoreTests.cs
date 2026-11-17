@@ -126,6 +126,36 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.False(s.IsReadOnly);
     }
 
+    [Theory]
+    [InlineData("""{"logLevel":"Debug"}""")]                    // no "values" wrapper
+    [InlineData("""{"version":1,"values":[1,2]}""")]             // values not an object
+    [InlineData("""{"version":"2","values":{}}""")]              // version not an integer
+    [InlineData("""{"version":2.5,"values":{}}""")]
+    [InlineData("""{"version":-1,"values":{}}""")]
+    [InlineData("""[1,2,3]""")]
+    public void WrongShape_BackedUpAndNeverOverwritten(string content)
+    {
+        File.WriteAllText(SettingsFile, content);
+        var s = SettingsStore.Load(dir);
+        Assert.Equal(30, s.Get(SettingKeys.LowBatteryPercent));
+        Assert.Equal(content, File.ReadAllText(SettingsFile + ".bad"));
+        Assert.NotEmpty(s.Warnings);
+    }
+
+    [Fact]
+    public void UnreadableFile_IsReadOnlyAndUntouched()
+    {
+        const string original = """{"version":1,"values":{"lowBatteryPercent":25}}""";
+        File.WriteAllText(SettingsFile, original);
+        SettingsStore s;
+        using (new FileStream(SettingsFile, FileMode.Open, FileAccess.Read, FileShare.None))
+            s = SettingsStore.Load(dir);
+        Assert.True(s.IsReadOnly);
+        Assert.NotEmpty(s.Warnings);
+        s.SetGlobal(SettingKeys.LowBatteryPercent, 10);
+        Assert.Equal(original, File.ReadAllText(SettingsFile));
+    }
+
     [Fact]
     public void CorruptDeviceFile_BackedUpAndGlobalUsed()
     {
