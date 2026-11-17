@@ -4,7 +4,8 @@ AirPods companion for Windows: battery, ear detection and quick connect for Appl
 and Apple-chip Beats, as a lightweight tray app. No drivers, no admin rights.
 
 > **Status: early development.** The BLE decoding and device-tracking core is done and
-> tested against real AirPods Pro 2 adverts; the Windows app itself is not built yet.
+> tested against real AirPods Pro 2 and AirPods Max adverts. The tray app runs and shows
+> nearby devices' battery; connection control, ear detection and the popup come next.
 > See `PLAN.md` for the roadmap.
 
 ## Planned for v1
