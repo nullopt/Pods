@@ -12,7 +12,7 @@ namespace Pods.App.Tray;
 /// </summary>
 internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
 {
-    const double MaxHeightFraction = 0.8;
+    const double MaxHeightFraction = 0.9;
     readonly ScrollViewer scroller;
     bool closed;
 

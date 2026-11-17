@@ -69,7 +69,7 @@
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="devices:DeviceCardViewModel">
-                    <Grid Width="216" Height="290" Padding="14" RowSpacing="10" CornerRadius="14"
+                    <Grid Width="216" Height="256" Padding="12" RowSpacing="8" CornerRadius="14"
                           Background="{ThemeResource PodsCardBackground}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
@@ -122,8 +122,8 @@
                         <StackPanel Grid.Row="1" Spacing="10" HorizontalAlignment="Center" VerticalAlignment="Center"
                                     Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
                                     Visibility="{x:Bind IsWhole, Mode=OneWay}">
-                            <Border Height="90" HorizontalAlignment="Center">
-                                <views:TurntableView FrameHeight="90" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                            <Border Height="70" HorizontalAlignment="Center">
+                                <views:TurntableView FrameHeight="70" Sheet="{x:Bind Sheet, Mode=OneWay}"
                                                      IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                             </Border>
                             <ContentControl Content="{x:Bind Single}" ContentTemplate="{StaticResource RingTemplate}"

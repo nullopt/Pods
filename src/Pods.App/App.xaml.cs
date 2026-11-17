@@ -70,6 +70,8 @@ public partial class App : Application
         // Tray only: nothing shows until the icon is clicked.
         tray = CreateTray();
         OnHeadphonesChanged();
+        // A notification clicked after Pods exited starts it with that activation instead of NotificationInvoked.
+        if (AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.AppNotification) OpenFlyout();
     }
 
     /// <summary>After sleep the watchers may be stale: restart them; the cards stay until the new lists arrive.</summary>
