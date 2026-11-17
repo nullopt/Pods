@@ -249,7 +249,7 @@ public sealed class HeadphoneSource(
             State: state,
             Battery: advert is null ? null : stream!.Tracker.Battery,
             Playback: advert is null ? null : stream!.Tracker.Playback,
-            IsSingleBattery: ModelCatalog.MaxFamilyIds.Contains(device.ModelId),
+            IsSingleBattery: ModelCatalog.SingleBatteryIds.Contains(device.ModelId),
             IsInCase: fresh && advert!.BothInCase);
     }
 

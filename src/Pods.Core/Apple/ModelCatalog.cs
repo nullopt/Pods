@@ -18,6 +18,12 @@ public static class ModelCatalog
     /// <summary>AirPods Max family IDs; their adverts need a different status mapping.</summary>
     public static IReadOnlySet<string> MaxFamilyIds { get; } = new HashSet<string>(StringComparer.Ordinal) { "0a20", "1f20", "2d20" };
 
+    /// <summary>Headphones with one battery and no case: the AirPods Max family, over-ear Beats and neckbands.</summary>
+    public static IReadOnlySet<string> SingleBatteryIds { get; } = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "0a20", "1f20", "2d20", "0320", "0520", "0620", "0920", "0c20", "1020",
+    };
+
     public static IReadOnlyList<AppleModel> All { get; } =
     [
         new("0220", "AirPods (1st generation)", E),

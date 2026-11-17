@@ -72,4 +72,12 @@ public class AdvertDerivedTests
         Assert.True(D(Frames.Pro2(0x01), -40, 1).SameState(D(Frames.Pro2(0x01), -90, 2)));
         Assert.False(D(Frames.Pro2(0x01, b6: 0x58)).SameState(D(Frames.Pro2(0x01, b6: 0x48))));
     }
+
+    [Fact]
+    public void BothInCase_NeverForCaselessModel()
+    {
+        // Beats Solo3 with the status bits that mean "both pods in case" on earbuds.
+        var advert = AdvertDecoder.Decode(Frames.Make(0x06, 0x20, 0x15, 0x58, 0x13), -50, 1)!;
+        Assert.False(advert.BothInCase);
+    }
 }

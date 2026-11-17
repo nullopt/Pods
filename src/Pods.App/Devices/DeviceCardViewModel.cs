@@ -125,12 +125,16 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         Left.Update(left, leftCharging);
         Right.Update(right, rightCharging);
         Case.Update(@case, caseCharging);
-        Single.Update(left, leftCharging);
+        // Single-battery headsets report their level in whichever pod slot their advert uses.
+        int? single = left ?? right;
+        var singleCharging = left is null ? rightCharging : leftCharging;
+        Single.Update(single, singleCharging);
 
-        UpdateRows(snapshot.Name, left, right, @case, leftCharging, rightCharging, caseCharging);
+        UpdateRows(snapshot.Name, left, right, @case, leftCharging, rightCharging, caseCharging, single, singleCharging);
     }
 
-    void UpdateRows(string name, int? left, int? right, int? @case, bool leftCharging, bool rightCharging, bool caseCharging)
+    void UpdateRows(string name, int? left, int? right, int? @case, bool leftCharging, bool rightCharging, bool caseCharging,
+        int? single, bool singleCharging)
     {
         if (singleLayout != IsSingleBattery)
         {
@@ -145,7 +149,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         }
         if (IsSingleBattery)
         {
-            wholeRow.Update(Sheet, name, BatteryText.Format(left), left, leftCharging);
+            wholeRow.Update(Sheet, name, BatteryText.Format(single), single, singleCharging);
             return;
         }
         // Without a cut the sheet cannot be split, so the rows show no icon rather than the wrong part.

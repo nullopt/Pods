@@ -29,8 +29,8 @@ public sealed partial record AppleAdvert
         : AdvertDecoder.IsMaxFamily(Model) ? LidCounter >> 4 == 8   // Max: measured transient on any state change, incl. leaving the case
         : Bit(2) && BothPresent && (LidCounter & 0x0F) <= 8;
 
-    /// <summary>Both pods are in the case (status bit 2; bit 4 alone means one pod). The AirPods Max has no case.</summary>
-    public bool BothInCase => !AdvertDecoder.IsMaxFamily(Model) && BothPresent && Bit(2);
+    /// <summary>Both pods are in the case (status bit 2; bit 4 alone means one pod). Never for headphones without a case.</summary>
+    public bool BothInCase => !ModelCatalog.SingleBatteryIds.Contains(ModelId) && BothPresent && Bit(2);
 
     /// <summary>Null unless the model supports auto-connect.</summary>
     public bool? AutoConnect => !Has(AppleCapabilities.AutoConnect) ? null

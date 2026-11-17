@@ -43,7 +43,7 @@ internal sealed partial class TurntableView : UserControl
         Visibility = Visibility.Collapsed;
         IsHitTestVisible = false;
         Loaded += (_, _) => Update();
-        Unloaded += (_, _) => StopSpinning();
+        Unloaded += (_, _) => Release();
     }
 
     /// <summary>Sheet name from <see cref="Turntable.Resolve"/>, or null for none.</summary>
@@ -137,6 +137,19 @@ internal sealed partial class TurntableView : UserControl
         ElementCompositionPreview.SetElementChildVisual(this, sprite);
     }
 
+    /// <summary>
+    /// Lets go of the shared sheet when the view leaves the tree, so closed windows do not keep views
+    /// alive through its <see cref="SheetSurface.Ready"/> event. A late Unloaded after a re-parent is ignored.
+    /// </summary>
+    void Release()
+    {
+        if (IsLoaded) return;
+        StopSpinning();
+        if (surface is not null) surface.Ready -= Update;
+        surface = null;
+        if (brush is not null) brush.Surface = null;
+    }
+
     void StopSpinning()
     {
         if (!spinning || brush is null) return;
@@ -163,11 +176,16 @@ internal sealed partial class TurntableView : UserControl
         public SheetSurface(Uri uri)
         {
             Surface = LoadedImageSurface.StartLoadFromUri(uri);
-            Surface.LoadCompleted += (sender, args) =>
-            {
-                if (args.Status == LoadedImageSourceLoadStatus.Success) Size = sender.NaturalSize;
-                Ready?.Invoke();
-            };
+            Surface.LoadCompleted += OnLoadCompleted;
+        }
+
+        // Unsubscribed once done: the native surface holding this handler would otherwise keep the
+        // sheet alive forever, defeating the weak cache.
+        void OnLoadCompleted(LoadedImageSurface sender, LoadedImageSourceLoadCompletedEventArgs args)
+        {
+            sender.LoadCompleted -= OnLoadCompleted;
+            if (args.Status == LoadedImageSourceLoadStatus.Success) Size = sender.NaturalSize;
+            Ready?.Invoke();
         }
 
         public LoadedImageSurface Surface { get; }

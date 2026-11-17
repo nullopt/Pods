@@ -5,14 +5,17 @@ using Pods.Core.Devices;
 
 namespace Pods.App.Devices;
 
-/// <summary>Demo devices for UI work without hardware (Debug builds only). Connect and disconnect take 1.5 s.</summary>
+/// <summary>
+/// Demo devices for UI work without hardware (Debug builds only). Connect and disconnect take 1.5 s.
+/// Ids are 12 hex digits like real addresses, because per-device settings require that form.
+/// </summary>
 internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
 {
     readonly List<HeadphoneSnapshot> devices =
     [
-        new("demo-pro2", "AirPods Pro 2", "1420", "00", DeviceState.Connected,
+        new("de0000000001", "AirPods Pro 2", "1420", "00", DeviceState.Connected,
             new PodBattery(95, 85, 45, false, true, false), Playback.NoneIn, IsSingleBattery: false, IsInCase: true),
-        new("demo-max", "AirPods Max", "0a20", "0f", DeviceState.Disconnected,
+        new("de0000000002", "AirPods Max", "0a20", "0f", DeviceState.Disconnected,
             new PodBattery(60, null, null, false, false, false), Playback.NoneIn, IsSingleBattery: true),
     ];
     DispatcherQueueTimer? timer;

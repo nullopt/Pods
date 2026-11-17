@@ -433,4 +433,21 @@ public sealed class HeadphoneSourceTests : IDisposable
         BringUp(() => AdvertDecoder.Decode(Frames.Pro2(0x01), -50, 1)!);
         Assert.False(Card(ProDevice.Id).IsInCase);
     }
+
+    [Theory]
+    [InlineData("0620")]   // Beats Solo3: over-ear, no case
+    [InlineData("1020")]   // Beats Flex: neckband, no case
+    [InlineData("0a20")]   // AirPods Max
+    public void CaselessModel_IsSingleBattery(string modelId)
+    {
+        StartWith(new PairedDevice("112233445566", "Headphones", modelId, false));
+        Assert.True(Card("112233445566").IsSingleBattery);
+    }
+
+    [Fact]
+    public void EarbudsWithCase_AreNotSingleBattery()
+    {
+        StartWith(ProDevice);
+        Assert.False(Card(ProDevice.Id).IsSingleBattery);
+    }
 }
