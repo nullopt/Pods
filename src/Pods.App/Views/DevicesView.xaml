@@ -135,7 +135,11 @@
                                                                     Visibility="{x:Bind ShowCombinedBuds, Mode=OneWay}" />
                                                     <StackPanel Orientation="Horizontal" Spacing="4"
                                                                 Visibility="{x:Bind ShowSeparateBuds, Mode=OneWay}">
-                                                        <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}" />
+                                                        <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}">
+                                                            <ContentControl.RenderTransform>
+                                                                <TranslateTransform X="-5" />
+                                                            </ContentControl.RenderTransform>
+                                                        </ContentControl>
                                                         <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
                                                     </StackPanel>
                                                 </Grid>
