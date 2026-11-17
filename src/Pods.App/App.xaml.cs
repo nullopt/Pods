@@ -72,7 +72,7 @@ public partial class App : Application
     {
         if (mainWindow is null)
         {
-            mainWindow = new MainWindow(Headphones);
+            mainWindow = new MainWindow(Headphones, Settings);
             mainWindow.Closed += (_, _) => mainWindow = null;
         }
         mainWindow.Activate();

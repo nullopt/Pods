@@ -3,13 +3,21 @@ using Pods.Core.Devices;
 
 namespace Pods.App.Devices;
 
-/// <summary>One battery ring on a device card (left, right, case, or the single Max battery).</summary>
-internal sealed partial class BatteryViewModel(string label) : ObservableObject
+/// <summary>What sits before a ring's percentage: nothing, a circled L or R, or a tiny case image.</summary>
+internal enum BatteryBadge { None, Left, Right, Case }
+
+/// <summary>One battery ring on an expanded card.</summary>
+internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableObject
 {
     /// <summary>At or below this level the ring turns red, as on iPhone.</summary>
-    const int LowPercent = 20;
+    public const int LowPercent = 20;
 
-    public string Label { get; } = label;
+    public bool HasLetter { get; } = badge is BatteryBadge.Left or BatteryBadge.Right;
+    public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
+    public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
+
+    /// <summary>Sheet for the tiny case image of a <see cref="BatteryBadge.Case"/> badge.</summary>
+    [ObservableProperty] public partial string? BadgeSheet { get; set; }
 
     [ObservableProperty] public partial string Text { get; private set; } = BatteryText.Format(null);
     [ObservableProperty] public partial double Value { get; private set; }

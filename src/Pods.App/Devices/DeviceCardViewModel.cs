@@ -4,35 +4,67 @@ using CommunityToolkit.Mvvm.Input;
 using Pods.App.Views;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
+using Pods.Core.Settings;
 
 namespace Pods.App.Devices;
 
+/// <summary>
+/// One device card. Expanded it follows the iPhone case-open card: earbuds and case as separate
+/// images (cut from one turntable sheet) with a ring under each; collapsed it shows one row per part,
+/// as in the macOS Bluetooth menu. The collapsed choice is remembered per device.
+/// </summary>
 internal sealed partial class DeviceCardViewModel : ObservableObject
 {
-    readonly BatteryViewModel left = new(Strings.Get("BatteryLeft"));
-    readonly BatteryViewModel right = new(Strings.Get("BatteryRight"));
-    readonly BatteryViewModel @case = new(Strings.Get("BatteryCase"));
-    readonly BatteryViewModel single = new(Strings.Get("BatterySingle"));
     readonly IHeadphoneSource source;
+    readonly SettingsStore settings;
+    readonly PartRowViewModel budsRow = new(TurntablePart.Left);
+    readonly PartRowViewModel caseRow = new(TurntablePart.Right);
+    readonly PartRowViewModel wholeRow = new(TurntablePart.Whole);
     bool? singleLayout;
 
-    public DeviceCardViewModel(HeadphoneSnapshot snapshot, IHeadphoneSource source, bool adapterAvailable)
+    public DeviceCardViewModel(HeadphoneSnapshot snapshot, IHeadphoneSource source, SettingsStore settings, bool adapterAvailable)
     {
         this.source = source;
+        this.settings = settings;
         Key = snapshot.Key;
+        IsCollapsed = settings.GetForDevice(SettingKeys.CardCollapsed, Key);
         Update(snapshot, adapterAvailable);
     }
 
     public string Key { get; }
 
-    /// <summary>Left, right and case rings; or one ring for single-battery headphones.</summary>
-    public ObservableCollection<BatteryViewModel> Batteries { get; } = [];
+    public BatteryViewModel Buds { get; } = new(BatteryBadge.None);
+    public BatteryViewModel Left { get; } = new(BatteryBadge.Left);
+    public BatteryViewModel Right { get; } = new(BatteryBadge.Right);
+    public BatteryViewModel Case { get; } = new(BatteryBadge.Case);
+    public BatteryViewModel Single { get; } = new(BatteryBadge.None);
+
+    /// <summary>Rows of the collapsed card.</summary>
+    public ObservableCollection<PartRowViewModel> Rows { get; } = [];
 
     [ObservableProperty] public partial string Name { get; private set; } = "";
     [ObservableProperty] public partial string StateText { get; private set; } = "";
+    [ObservableProperty] public partial string? Sheet { get; private set; }
 
-    /// <summary>Spinning artwork sheet for this model and colour, or null.</summary>
-    [ObservableProperty] public partial string? TurntableSheet { get; private set; }
+    /// <summary>The sheet shows earbuds and case side by side, so they are drawn as two images.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsWhole))]
+    public partial bool IsSplit { get; private set; }
+
+    public bool IsWhole => !IsSplit;
+
+    /// <summary>Spins only while both pods are in the case, as on iPhone.</summary>
+    [ObservableProperty] public partial bool IsSpinning { get; private set; }
+
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(HasPodRings))]
+    public partial bool IsSingleBattery { get; private set; }
+
+    public bool HasPodRings => !IsSingleBattery;
+
+    /// <summary>One ring for both earbuds when they match; otherwise separate L and R rings.</summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowSeparateBuds))]
+    public partial bool ShowCombinedBuds { get; private set; }
+
+    public bool ShowSeparateBuds => !ShowCombinedBuds;
 
     /// <summary>Artwork and rings are greyed out unless the device is connected to this PC.</summary>
     [ObservableProperty] public partial double ContentOpacity { get; private set; } = 1;
@@ -43,11 +75,31 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
     /// <summary>False while a request is pending or Bluetooth is off.</summary>
     [ObservableProperty] public partial bool CanAct { get; private set; }
 
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(IsExpanded), nameof(ChevronGlyph), nameof(ChevronTip))]
+    public partial bool IsCollapsed { get; private set; }
+
+    public bool IsExpanded => !IsCollapsed;
+    public string ChevronGlyph => IsCollapsed ? "" : "";
+    public string ChevronTip => Strings.Get(IsCollapsed ? "CardExpand" : "CardCollapse");
+
     [RelayCommand]
     void Connect() => source.Connect(Key);
 
     [RelayCommand]
     void Disconnect() => source.Disconnect(Key);
+
+    [RelayCommand]
+    void ToggleCollapsed() => SetCollapsed(!IsCollapsed);
+
+    /// <summary>Clicking a collapsed card's rows expands it.</summary>
+    public void ExpandFromRows() => SetCollapsed(false);
+
+    void SetCollapsed(bool value)
+    {
+        if (IsCollapsed == value) return;
+        IsCollapsed = value;
+        settings.SetForDevice(SettingKeys.CardCollapsed, Key, value);
+    }
 
     public void Update(HeadphoneSnapshot snapshot, bool adapterAvailable)
     {
@@ -59,28 +111,51 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         ShowConnect = !connected;
         ShowDisconnect = connected;
         CanAct = adapterAvailable && !pending;
-        TurntableSheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
 
-        if (singleLayout != snapshot.IsSingleBattery)
-        {
-            singleLayout = snapshot.IsSingleBattery;
-            Batteries.Clear();
-            if (snapshot.IsSingleBattery) Batteries.Add(single);
-            else
-            {
-                Batteries.Add(left);
-                Batteries.Add(right);
-                Batteries.Add(@case);
-            }
-        }
+        Sheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
+        IsSplit = Sheet is not null && Turntable.Cut(Sheet) is not null;
+        IsSpinning = snapshot.IsInCase;
+        IsSingleBattery = snapshot.IsSingleBattery;
 
         var b = snapshot.Battery;
-        if (snapshot.IsSingleBattery) single.Update(b?.Left, b?.LeftCharging ?? false);
-        else
+        int? left = b?.Left, right = b?.Right, @case = b?.Case;
+        bool leftCharging = b?.LeftCharging ?? false, rightCharging = b?.RightCharging ?? false, caseCharging = b?.CaseCharging ?? false;
+        ShowCombinedBuds = left is not null && left == right && leftCharging == rightCharging;
+        Buds.Update(left, leftCharging);
+        Left.Update(left, leftCharging);
+        Right.Update(right, rightCharging);
+        Case.Update(@case, caseCharging);
+        Single.Update(left, leftCharging);
+
+        UpdateRows(snapshot.Name, left, right, @case, leftCharging, rightCharging, caseCharging);
+    }
+
+    void UpdateRows(string name, int? left, int? right, int? @case, bool leftCharging, bool rightCharging, bool caseCharging)
+    {
+        if (singleLayout != IsSingleBattery)
         {
-            left.Update(b?.Left, b?.LeftCharging ?? false);
-            right.Update(b?.Right, b?.RightCharging ?? false);
-            @case.Update(b?.Case, b?.CaseCharging ?? false);
+            singleLayout = IsSingleBattery;
+            Rows.Clear();
+            if (IsSingleBattery) Rows.Add(wholeRow);
+            else
+            {
+                Rows.Add(budsRow);
+                Rows.Add(caseRow);
+            }
         }
+        if (IsSingleBattery)
+        {
+            wholeRow.Update(Sheet, name, BatteryText.Format(left), left, leftCharging);
+            return;
+        }
+        // Without a cut the sheet cannot be split, so the rows show no icon rather than the wrong part.
+        var partSheet = IsSplit ? Sheet : null;
+        var budsText = left == right
+            ? BatteryText.Format(left)
+            : $"L {BatteryText.Format(left)} · R {BatteryText.Format(right)}";
+        int? lowest = left is null ? right : right is null ? left : Math.Min(left.Value, right.Value);
+        budsRow.Update(partSheet, name, budsText, lowest, leftCharging && rightCharging);
+        Case.BadgeSheet = partSheet;
+        caseRow.Update(partSheet, $"{name} {Strings.Get("CardCaseSuffix")}", BatteryText.Format(@case), @case, caseCharging);
     }
 }

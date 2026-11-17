@@ -2,6 +2,7 @@ using Microsoft.UI.Dispatching;
 using Pods.App.Devices;
 using Pods.App.Views;
 using Pods.Core.Devices;
+using Pods.Core.Settings;
 using Windows.Graphics;
 
 namespace Pods.App;
@@ -10,7 +11,7 @@ public sealed partial class MainWindow : Microsoft.UI.Xaml.Window
 {
     readonly DevicesViewModel devices;
 
-    internal MainWindow(IHeadphoneSource headphones)
+    internal MainWindow(IHeadphoneSource headphones, SettingsStore settings)
     {
         InitializeComponent();
         Title = Strings.Get("MainWindowTitle");
@@ -18,7 +19,7 @@ public sealed partial class MainWindow : Microsoft.UI.Xaml.Window
         AppWindow.Resize(new SizeInt32(480, 640));
         ExtendsContentIntoTitleBar = true;
 
-        devices = new DevicesViewModel(headphones, DispatcherQueue.GetForCurrentThread());
+        devices = new DevicesViewModel(headphones, settings, DispatcherQueue.GetForCurrentThread());
         Root.Children.Add(new DevicesView(devices));
         Closed += (_, _) => devices.Dispose();
     }

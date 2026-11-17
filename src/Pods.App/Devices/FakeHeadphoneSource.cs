@@ -11,7 +11,7 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
     readonly List<HeadphoneSnapshot> devices =
     [
         new("demo-pro2", "AirPods Pro 2", "1420", "00", DeviceState.Connected,
-            new PodBattery(95, 85, 45, false, true, false), Playback.NoneIn, IsSingleBattery: false),
+            new PodBattery(95, 85, 45, false, true, false), Playback.NoneIn, IsSingleBattery: false, IsInCase: true),
         new("demo-max", "AirPods Max", "0a20", "0f", DeviceState.Disconnected,
             new PodBattery(60, null, null, false, false, false), Playback.NoneIn, IsSingleBattery: true),
     ];

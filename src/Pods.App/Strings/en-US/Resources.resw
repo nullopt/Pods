@@ -25,8 +25,7 @@
   <data name="RequestConnectFailed" xml:space="preserve"><value>Couldn't connect</value></data>
   <data name="RequestDisconnectFailed" xml:space="preserve"><value>Couldn't disconnect</value></data>
   <data name="StateMultipleConnection" xml:space="preserve"><value>Connected to several devices</value></data>
-  <data name="BatteryLeft" xml:space="preserve"><value>Left</value></data>
-  <data name="BatteryRight" xml:space="preserve"><value>Right</value></data>
-  <data name="BatteryCase" xml:space="preserve"><value>Case</value></data>
-  <data name="BatterySingle" xml:space="preserve"><value>Battery</value></data>
+  <data name="CardCaseSuffix" xml:space="preserve"><value>Case</value></data>
+  <data name="CardCollapse" xml:space="preserve"><value>Collapse</value></data>
+  <data name="CardExpand" xml:space="preserve"><value>Expand</value></data>
 </root>

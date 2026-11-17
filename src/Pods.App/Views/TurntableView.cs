@@ -20,7 +20,7 @@ internal enum TurntablePart { Whole, Left, Right }
 internal sealed partial class TurntableView : UserControl
 {
     static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "Assets", "Turntables");
-    static readonly Dictionary<string, WeakReference<LoadedImageSurface>> Surfaces = [];
+    static readonly Dictionary<string, WeakReference<SheetSurface>> Surfaces = [];
 
     /// <summary>Sheet names shipped with the app (file names without extension).</summary>
     public static IReadOnlySet<string> Available { get; } =
@@ -35,7 +35,7 @@ internal sealed partial class TurntableView : UserControl
 
     SpriteVisual? sprite;
     CompositionSurfaceBrush? brush;
-    LoadedImageSurface? surface;
+    SheetSurface? surface;
     bool spinning;
 
     public TurntableView()
@@ -67,19 +67,19 @@ internal sealed partial class TurntableView : UserControl
         var sheetSurface = SurfaceFor(Sheet);
         if (!ReferenceEquals(sheetSurface, surface))
         {
-            if (surface is not null) surface.LoadCompleted -= OnLoadCompleted;
+            if (surface is not null) surface.Ready -= Update;
             surface = sheetSurface;
-            if (surface is not null) surface.LoadCompleted += OnLoadCompleted;
+            if (surface is not null) surface.Ready += Update;
             StopSpinning();
         }
-        if (surface is null || surface.NaturalSize.Width <= 0)
+        if (surface?.Size is not { } size)
         {
             Visibility = Visibility.Collapsed;
             return;
         }
 
-        var frameWidth = (float)surface.NaturalSize.Width / Turntable.Columns;
-        var frameHeight = (float)surface.NaturalSize.Height / Turntable.Rows;
+        var frameWidth = (float)size.Width / Turntable.Columns;
+        var frameHeight = (float)size.Height / Turntable.Rows;
         var cut = Turntable.Cut(Sheet!);
         if (Part != TurntablePart.Whole && cut is null)
         {
@@ -96,7 +96,7 @@ internal sealed partial class TurntableView : UserControl
         var scale = double.IsNaN(FrameHeight) ? 1f : (float)(FrameHeight / frameHeight);
 
         EnsureVisual();
-        brush!.Surface = surface;
+        brush!.Surface = surface.Surface;
         brush.Scale = new Vector2(scale);
         sprite!.Size = new Vector2(partWidth * scale, frameHeight * scale);
         Width = sprite.Size.X;
@@ -124,12 +124,6 @@ internal sealed partial class TurntableView : UserControl
         Visibility = Visibility.Visible;
     }
 
-    void OnLoadCompleted(LoadedImageSurface sender, LoadedImageSourceLoadCompletedEventArgs args)
-    {
-        if (args.Status == LoadedImageSourceLoadStatus.Success) Update();
-        else Visibility = Visibility.Collapsed;
-    }
-
     void EnsureVisual()
     {
         if (sprite is not null) return;
@@ -151,12 +145,36 @@ internal sealed partial class TurntableView : UserControl
     }
 
     /// <summary>The shared decoded surface for a sheet; starts decoding on first use.</summary>
-    static LoadedImageSurface? SurfaceFor(string? sheet)
+    static SheetSurface? SurfaceFor(string? sheet)
     {
         if (sheet is null || !Available.Contains(sheet)) return null;
         if (Surfaces.TryGetValue(sheet, out var weak) && weak.TryGetTarget(out var cached)) return cached;
-        var created = LoadedImageSurface.StartLoadFromUri(new Uri(Path.Combine(Folder, sheet + ".webp")));
-        Surfaces[sheet] = new WeakReference<LoadedImageSurface>(created);
+        var created = new SheetSurface(new Uri(Path.Combine(Folder, sheet + ".webp")));
+        Surfaces[sheet] = new WeakReference<SheetSurface>(created);
         return created;
+    }
+
+    /// <summary>
+    /// A decoding sheet. Its size is readable only after decoding completes (reading it earlier
+    /// throws), so it is captured then and views waiting on <see cref="Ready"/> are told.
+    /// </summary>
+    sealed class SheetSurface
+    {
+        public SheetSurface(Uri uri)
+        {
+            Surface = LoadedImageSurface.StartLoadFromUri(uri);
+            Surface.LoadCompleted += (sender, args) =>
+            {
+                if (args.Status == LoadedImageSourceLoadStatus.Success) Size = sender.NaturalSize;
+                Ready?.Invoke();
+            };
+        }
+
+        public LoadedImageSurface Surface { get; }
+
+        /// <summary>The sheet's size once decoded; null while decoding or if it failed.</summary>
+        public Windows.Foundation.Size? Size { get; private set; }
+
+        public event Action? Ready;
     }
 }

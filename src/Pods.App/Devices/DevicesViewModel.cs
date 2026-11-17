@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using Microsoft.UI.Dispatching;
 using Pods.Core.Devices;
+using Pods.Core.Settings;
 
 namespace Pods.App.Devices;
 
@@ -9,11 +10,13 @@ namespace Pods.App.Devices;
 internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
 {
     readonly IHeadphoneSource source;
+    readonly SettingsStore settings;
     readonly DispatcherQueue ui;
 
-    public DevicesViewModel(IHeadphoneSource source, DispatcherQueue ui)
+    public DevicesViewModel(IHeadphoneSource source, SettingsStore settings, DispatcherQueue ui)
     {
         this.source = source;
+        this.settings = settings;
         this.ui = ui;
         source.Changed += OnChanged;
         Sync();
@@ -43,7 +46,7 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
         {
             var snapshot = current[i];
             var index = IndexOf(snapshot.Key);
-            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot, source, adapterAvailable));
+            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot, source, settings, adapterAvailable));
             else
             {
                 if (index != i) Cards.Move(index, i);
