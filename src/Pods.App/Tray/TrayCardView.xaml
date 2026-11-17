@@ -11,7 +11,7 @@
         <Grid>
             <TextBlock x:Uid="TrayNoHeadphones" FontSize="14" Foreground="{ThemeResource PodsSecondaryText}"
                        Visibility="{x:Bind Card.IsEmpty, Mode=OneWay}" />
-            <ItemsControl ItemsSource="{x:Bind Card.Rings, Mode=OneWay}">
+            <ItemsControl x:Name="RingList" ItemsSource="{x:Bind Card.Rings, Mode=OneWay}">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
                         <StackPanel Orientation="Horizontal" Spacing="18" />

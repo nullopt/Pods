@@ -31,6 +31,7 @@ internal sealed partial class TrayCardWindow : Window
         AppWindow.Title = Strings.Get("AppDisplayName");
         hwnd = Win32Interop.GetWindowFromWindowId(AppWindow.Id);
         view.SizeChanged += (_, _) => Place();
+        Closed += (_, _) => view.Detach();
     }
 
     /// <summary>Shows the card centred on the icon (screen pixels), above it, or below a top taskbar.</summary>
@@ -61,7 +62,8 @@ internal sealed partial class TrayCardWindow : Window
 
         var work = DisplayArea.GetFromPoint(new PointInt32(anchor.Left, anchor.Top), DisplayAreaFallback.Nearest).WorkArea;
         var gap = (int)(Gap * scale);
-        var x = Math.Clamp((anchor.Left + anchor.Right - width) / 2, work.X, work.X + work.Width - width);
+        // Max before Min: a card wider than the screen starts at its left edge instead of throwing.
+        var x = Math.Max(work.X, Math.Min((anchor.Left + anchor.Right - width) / 2, work.X + work.Width - width));
         var taskbarAtTop = anchor.Top < work.Y + work.Height / 2;
         var y = taskbarAtTop ? Math.Max(anchor.Bottom, work.Y) + gap : Math.Min(anchor.Top, work.Y + work.Height) - height - gap;
         AppWindow.ResizeClient(new SizeInt32(width, height));

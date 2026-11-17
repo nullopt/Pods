@@ -12,4 +12,11 @@ internal sealed partial class TrayCardView : UserControl
     }
 
     public TrayCardViewModel Card { get; }
+
+    /// <summary>Lets go of the long-lived card view model once the window closes, so closed cards are not kept alive.</summary>
+    public void Detach()
+    {
+        Bindings.StopTracking();
+        RingList.ItemsSource = null;
+    }
 }

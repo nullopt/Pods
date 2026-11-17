@@ -104,12 +104,15 @@ public partial class App : Application
 
         var icon = new TaskbarIcon
         {
+            // Kept as the icon's accessible name; the standard text tip is off so it never covers the card.
+            ToolTipText = Strings.Get("AppDisplayName"),
             IconSource = TrayIcon(trayLow),
             ContextMenuMode = ContextMenuMode.PopupMenu,
             ContextFlyout = menu,
             LeftClickCommand = new RelayCommand(ShowMainWindow),
             NoLeftClickDelay = true,
         };
+        icon.TrayIcon.UseStandardTooltip = false;
         icon.ForceCreate();
         trayHover = new TrayHover(icon, trayCard, ui!);
         return icon;
