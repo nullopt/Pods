@@ -22,15 +22,20 @@
                               Visibility="{x:Bind IsCharging, Mode=OneWay}" />
                 </Grid>
                 <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
-                    <Grid Width="17" Height="17" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
+                    <Grid Width="19" Height="19" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
                         <Ellipse Fill="{ThemeResource PodsPrimaryText}" />
-                        <TextBlock Text="{x:Bind Letter}" FontSize="10" FontWeight="Bold"
+                        <TextBlock Text="{x:Bind Letter}" FontSize="12" FontWeight="Bold"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="{ThemeResource PodsCardBackground}" />
                     </Grid>
-                    <Border VerticalAlignment="Center" Visibility="{x:Bind HasCaseBadge}">
-                        <views:TurntableView Part="Right" FrameHeight="20" Sheet="{x:Bind BadgeSheet, Mode=OneWay}" />
-                    </Border>
+                    <!-- Case glyph: rounded body, lid seam and catch. -->
+                    <Grid Width="22" Height="15" VerticalAlignment="Center" Visibility="{x:Bind HasCaseBadge}">
+                        <Rectangle RadiusX="4" RadiusY="4" Fill="{ThemeResource PodsPrimaryText}" />
+                        <Rectangle Height="1.2" Margin="0,5,0,0" VerticalAlignment="Top"
+                                   Fill="{ThemeResource PodsCardBackground}" />
+                        <Rectangle Width="8" Height="2.6" RadiusX="1.3" RadiusY="1.3" Margin="0,4.3,0,0"
+                                   VerticalAlignment="Top" Fill="{ThemeResource PodsCardBackground}" />
+                    </Grid>
                     <TextBlock Text="{x:Bind Text, Mode=OneWay}" FontSize="17" VerticalAlignment="Center"
                                Foreground="{ThemeResource PodsPrimaryText}" />
                 </StackPanel>

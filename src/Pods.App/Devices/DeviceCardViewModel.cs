@@ -159,7 +159,6 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
             : $"L {BatteryText.Format(left)} · R {BatteryText.Format(right)}";
         int? lowest = left is null ? right : right is null ? left : Math.Min(left.Value, right.Value);
         budsRow.Update(partSheet, name, budsText, lowest, leftCharging && rightCharging);
-        Case.BadgeSheet = partSheet;
         caseRow.Update(partSheet, $"{name} {Strings.Get("CardCaseSuffix")}", BatteryText.Format(@case), @case, caseCharging);
     }
 }
