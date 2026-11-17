@@ -117,24 +117,25 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         IsSpinning = IsSplit ? snapshot.IsInCase : Sheet is not null;
         IsSingleBattery = snapshot.IsSingleBattery;
 
+        var threshold = settings.GetForDevice(SettingKeys.LowBatteryPercent, Key);
         var b = snapshot.Battery;
         int? left = b?.Left, right = b?.Right, @case = b?.Case;
         bool leftCharging = b?.LeftCharging ?? false, rightCharging = b?.RightCharging ?? false, caseCharging = b?.CaseCharging ?? false;
         ShowCombinedBuds = left is not null && left == right && leftCharging == rightCharging;
-        Buds.Update(left, leftCharging);
-        Left.Update(left, leftCharging);
-        Right.Update(right, rightCharging);
-        Case.Update(@case, caseCharging);
+        Buds.Update(left, leftCharging, threshold);
+        Left.Update(left, leftCharging, threshold);
+        Right.Update(right, rightCharging, threshold);
+        Case.Update(@case, caseCharging, threshold);
         // Single-battery headsets report their level in whichever pod slot their advert uses.
         int? single = left ?? right;
         var singleCharging = left is null ? rightCharging : leftCharging;
-        Single.Update(single, singleCharging);
+        Single.Update(single, singleCharging, threshold);
 
-        UpdateRows(snapshot.Name, left, right, @case, leftCharging, rightCharging, caseCharging, single, singleCharging);
+        UpdateRows(snapshot.Name, left, right, @case, leftCharging, rightCharging, caseCharging, single, singleCharging, threshold);
     }
 
     void UpdateRows(string name, int? left, int? right, int? @case, bool leftCharging, bool rightCharging, bool caseCharging,
-        int? single, bool singleCharging)
+        int? single, bool singleCharging, int threshold)
     {
         if (singleLayout != IsSingleBattery)
         {
@@ -149,7 +150,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         }
         if (IsSingleBattery)
         {
-            wholeRow.Update(Sheet, name, BatteryText.Format(single), single, singleCharging);
+            wholeRow.Update(Sheet, name, BatteryText.Format(single), single, singleCharging, threshold);
             return;
         }
         // Without a cut the sheet cannot be split, so the rows show no icon rather than the wrong part.
@@ -158,7 +159,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
             ? BatteryText.Format(left)
             : $"L {BatteryText.Format(left)} · R {BatteryText.Format(right)}";
         int? lowest = left is null ? right : right is null ? left : Math.Min(left.Value, right.Value);
-        budsRow.Update(partSheet, name, budsText, lowest, leftCharging && rightCharging);
-        caseRow.Update(partSheet, $"{name} {Strings.Get("CardCaseSuffix")}", BatteryText.Format(@case), @case, caseCharging);
+        budsRow.Update(partSheet, name, budsText, lowest, leftCharging && rightCharging, threshold);
+        caseRow.Update(partSheet, $"{name} {Strings.Get("CardCaseSuffix")}", BatteryText.Format(@case), @case, caseCharging, threshold);
     }
 }

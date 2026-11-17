@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Pods.App.Views;
+using Pods.Core.Devices;
 
 namespace Pods.App.Devices;
 
@@ -21,12 +22,12 @@ internal sealed partial class PartRowViewModel(TurntablePart part) : ObservableO
     public bool IsNormal => !IsLow;
 
     /// <param name="level">Percentage the bar shows (the lower earbud when they differ); null = unknown.</param>
-    public void Update(string? sheet, string title, string text, int? level, bool charging)
+    public void Update(string? sheet, string title, string text, int? level, bool charging, int threshold)
     {
         Sheet = sheet;
         Title = title;
         Text = text;
         FillWidth = (level ?? 0) / 100.0 * BarInnerWidth;
-        IsLow = level is <= BatteryViewModel.LowPercent && !charging;
+        IsLow = BatteryRings.IsLow(level, charging, threshold);
     }
 }

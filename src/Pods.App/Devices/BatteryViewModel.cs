@@ -9,9 +9,6 @@ internal enum BatteryBadge { None, Left, Right, Case }
 /// <summary>One battery ring on an expanded card.</summary>
 internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableObject
 {
-    /// <summary>At or below this level the ring turns red, as on iPhone.</summary>
-    public const int LowPercent = 20;
-
     public bool HasLetter { get; } = badge is BatteryBadge.Left or BatteryBadge.Right;
     public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
     public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
@@ -28,11 +25,12 @@ internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableO
 
     public bool IsNormal => !IsLow;
 
-    public void Update(int? percent, bool charging)
+    /// <param name="threshold">The device's low-battery percentage: at or below it, not charging, the ring is red.</param>
+    public void Update(int? percent, bool charging, int threshold)
     {
         Text = BatteryText.Format(percent);
         Value = percent ?? 0;
         IsCharging = charging;
-        IsLow = percent is <= LowPercent && !charging;
+        IsLow = BatteryRings.IsLow(percent, charging, threshold);
     }
 }
