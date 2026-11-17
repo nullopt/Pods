@@ -23,6 +23,7 @@ internal sealed partial class TrayHover : IDisposable
     TrayCardWindow? window;
     int ticksInside;
     bool suppressed;
+    bool suspended;
 
     public TrayHover(TaskbarIcon icon, TrayCardViewModel card, DispatcherQueue ui)
     {
@@ -33,6 +34,17 @@ internal sealed partial class TrayHover : IDisposable
         timer.Interval = Tick;
         timer.Tick += (_, _) => OnTick();
         icon.TrayIcon.MessageWindow.MouseEventReceived += OnMouseEvent;
+    }
+
+    /// <summary>While set (the flyout is open), the card is hidden and does not appear.</summary>
+    public bool Suspended
+    {
+        get => suspended;
+        set
+        {
+            suspended = value;
+            if (value) Hide();
+        }
     }
 
     void OnMouseEvent(object? sender, MessageWindow.MouseEventReceivedEventArgs e) =>
@@ -59,7 +71,7 @@ internal sealed partial class TrayHover : IDisposable
             timer.Stop();
             return;
         }
-        if (++ticksInside == ShowAfterTicks && !suppressed) Show(rect);
+        if (++ticksInside == ShowAfterTicks && !suppressed && !suspended) Show(rect);
     }
 
     void Show(Rect rect)
@@ -74,7 +86,8 @@ internal sealed partial class TrayHover : IDisposable
         window = null;
     }
 
-    Rect? IconRect()
+    /// <summary>The icon's bounds in screen pixels, or null if the shell cannot say.</summary>
+    public Rect? IconRect()
     {
         var id = new NotifyIconIdentifier
         {
