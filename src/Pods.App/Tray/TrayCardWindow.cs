@@ -20,7 +20,8 @@ internal sealed partial class TrayCardWindow : Window
 
     public TrayCardWindow(TrayCardViewModel card)
     {
-        view = new TrayCardView(card);
+        // Sized to its content rather than the window, so rings added while it is open resize the window (SizeChanged).
+        view = new TrayCardView(card) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
         Content = view;
         // The context-menu presenter: a frameless popup that stays on top.
         var presenter = OverlappedPresenter.CreateForContextMenu();
