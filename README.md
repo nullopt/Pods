@@ -27,7 +27,8 @@ Settings and logs live in `%LOCALAPPDATA%\Pods`.
 
 ## Licence
 
-MIT, see `LICENSE`.
+MIT, see `LICENSE`. The bundled Inter font is under the SIL Open Font License
+(`src/Pods.App/Assets/Fonts/Inter-OFL.txt`).
 
 "AirPods" and "Beats" are trademarks of Apple Inc., used only to describe the hardware
 this app works with. This project is not affiliated with or endorsed by Apple.

@@ -9,6 +9,10 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Apple-style palette (iOS system colours); own values, no Apple assets. -->
+            <!-- Inter (SIL Open Font License, Assets/Fonts/Inter-OFL.txt): an open font close to Apple's system look. -->
+            <FontFamily x:Key="PodsFont">ms-appx:///Assets/Fonts/InterVariable.ttf#Inter Variable</FontFamily>
+            <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Fonts/InterVariable.ttf#Inter Variable</FontFamily>
+
             <ResourceDictionary.ThemeDictionaries>
                 <ResourceDictionary x:Key="Light">
                     <SolidColorBrush x:Key="PodsPageBackground" Color="#F2F2F7" />
