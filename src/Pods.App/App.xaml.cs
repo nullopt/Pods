@@ -5,6 +5,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
+using Pods.App.Logging;
+using Pods.Core.Settings;
+using Serilog;
 
 namespace Pods.App;
 
@@ -19,8 +22,23 @@ public partial class App : Application
     /// <summary>The running app, or null before <see cref="Application.Start"/> has created it.</summary>
     public static App? Instance => Current as App;
 
+    /// <summary>%LOCALAPPDATA%\Pods: settings and logs (SPEC §8).</summary>
+    public static string DataFolder { get; } =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Pods");
+
+    public SettingsStore Settings { get; private set; } = null!;
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
+        Directory.CreateDirectory(DataFolder);
+        Settings = SettingsStore.Load(DataFolder);
+        LogSetup.Configure(DataFolder, Settings.Get(SettingKeys.LogLevel));
+        foreach (var warning in Settings.Warnings) Log.Warning("Settings: {Warning}", warning);
+        Log.Information("Pods {Version} started", typeof(App).Assembly.GetName().Version);
+        UnhandledException += (_, e) => Log.Fatal(e.Exception, "Unhandled UI exception");
+        AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception");
+        TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
+
         ui = DispatcherQueue.GetForCurrentThread();
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         tray = CreateTray();
@@ -70,8 +88,12 @@ public partial class App : Application
         tray?.Dispose();
         tray = null;
         Program.ReleaseInstanceKey();
+        Log.CloseAndFlush();
         // Returns only if the restart could not be started.
-        _ = AppInstance.Restart("");
+        var failure = AppInstance.Restart("");
+        LogSetup.Configure(DataFolder, Settings.Get(SettingKeys.LogLevel));
+        Log.Error("Restart failed: {Reason}", failure);
+        AppInstance.FindOrRegisterForKey("main");
         tray = CreateTray();
     }
 
@@ -80,6 +102,7 @@ public partial class App : Application
         tray?.Dispose();
         tray = null;
         mainWindow?.Close();
+        Log.CloseAndFlush();
         Exit();
     }
 }
