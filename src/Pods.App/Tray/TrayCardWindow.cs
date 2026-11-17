@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Windows.Foundation;
 using Windows.Graphics;
 
@@ -20,9 +21,10 @@ internal sealed partial class TrayCardWindow : Window
 
     public TrayCardWindow(TrayCardViewModel card)
     {
-        // Sized to its content rather than the window, so rings added while it is open resize the window (SizeChanged).
-        view = new TrayCardView(card) { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
-        Content = view;
+        // A Canvas measures its child without limits, so the card can grow past the current window
+        // size when a headset connects; its SizeChanged then resizes the window both ways.
+        view = new TrayCardView(card);
+        Content = new Canvas { Children = { view } };
         // The context-menu presenter: a frameless popup that stays on top.
         var presenter = OverlappedPresenter.CreateForContextMenu();
         presenter.SetBorderAndTitleBar(false, false);
