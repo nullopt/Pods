@@ -5,6 +5,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
 using Pods.App.Logging;
 using Pods.Core.Devices;
@@ -45,11 +46,22 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
 
         ui = DispatcherQueue.GetForCurrentThread();
-        Headphones = new HeadphoneSource(new EmptyPairedDeviceSource(), new BleAdvertSource(), new NoConnectionControl(), TimeProvider.System);
+        var paired = new WindowsPairedDeviceSource();
+        Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
         Headphones.Start();
+        PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         tray = CreateTray();
         ShowMainWindow();
+    }
+
+    /// <summary>After sleep the watchers may be stale: restart them; the cards stay until the new lists arrive.</summary>
+    void OnSuspendStatusChanged(object? sender, object args)
+    {
+        if (PowerManager.SystemSuspendStatus is not (SystemSuspendStatus.AutoResume or SystemSuspendStatus.ManualResume)) return;
+        Log.Information("Resumed from sleep; restarting device watchers");
+        Headphones.Stop();
+        Headphones.Start();
     }
 
     /// <summary>A second launch was redirected here (single instance).</summary>
@@ -122,7 +134,9 @@ public partial class App : Application
 
     void ExitApp()
     {
+        PowerManager.SystemSuspendStatusChanged -= OnSuspendStatusChanged;
         Headphones.Stop();
+        (Headphones as IDisposable)?.Dispose();
         tray?.Dispose();
         tray = null;
         mainWindow?.Close();

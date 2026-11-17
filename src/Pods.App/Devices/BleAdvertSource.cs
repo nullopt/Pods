@@ -9,17 +9,48 @@ namespace Pods.App.Devices;
 
 /// <summary>
 /// Apple proximity-pairing adverts from the BLE watcher. The OS filters on the byte pattern
-/// <c>4C 00 07</c>, so only type-0x07 Apple frames reach this code.
+/// <c>4C 00 07</c>, so only type-0x07 Apple frames reach this code. Each <see cref="Start"/> uses a new
+/// watcher, so a restart right after <see cref="Stop"/> (resume from sleep) never meets one still stopping.
 /// </summary>
 internal sealed class BleAdvertSource : IAppleAdvertSource
 {
     const ushort AppleCompanyId = 0x004C;
-    readonly BluetoothLEAdvertisementWatcher watcher;
+    readonly Lock gate = new();
+    BluetoothLEAdvertisementWatcher? watcher;
     long malformed;
 
-    public BleAdvertSource()
+    public event Action<AppleAdvert>? AdvertReceived;
+
+    public void Start()
     {
-        watcher = new BluetoothLEAdvertisementWatcher { ScanningMode = BluetoothLEScanningMode.Passive };
+        var created = Create();
+        lock (gate)
+        {
+            Detach(watcher);
+            watcher = created;
+        }
+        created.Start();
+    }
+
+    public void Stop()
+    {
+        lock (gate)
+        {
+            Detach(watcher);
+            watcher = null;
+        }
+    }
+
+    void Detach(BluetoothLEAdvertisementWatcher? old)
+    {
+        if (old is null) return;
+        old.Received -= OnReceived;
+        if (old.Status == BluetoothLEAdvertisementWatcherStatus.Started) old.Stop();
+    }
+
+    BluetoothLEAdvertisementWatcher Create()
+    {
+        var watcher = new BluetoothLEAdvertisementWatcher { ScanningMode = BluetoothLEScanningMode.Passive };
         watcher.AdvertisementFilter.BytePatterns.Add(new BluetoothLEAdvertisementBytePattern
         {
             DataType = 0xFF,
@@ -32,13 +63,8 @@ internal sealed class BleAdvertSource : IAppleAdvertSource
             if (e.Error != Windows.Devices.Bluetooth.BluetoothError.Success)
                 Log.Warning("BLE watcher stopped: {Error}", e.Error);
         };
+        return watcher;
     }
-
-    public event Action<AppleAdvert>? AdvertReceived;
-
-    public void Start() => watcher.Start();
-
-    public void Stop() => watcher.Stop();
 
     void OnReceived(BluetoothLEAdvertisementWatcher sender, BluetoothLEAdvertisementReceivedEventArgs e)
     {
