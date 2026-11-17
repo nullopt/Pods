@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Pods.App.Views;
+using Pods.Core.Apple;
 using Pods.Core.Devices;
 
 namespace Pods.App.Devices;
@@ -26,10 +28,14 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
     [ObservableProperty] public partial string Name { get; private set; } = "";
     [ObservableProperty] public partial string StateText { get; private set; } = "";
 
+    /// <summary>Spinning artwork sheet for this model and colour, or null.</summary>
+    [ObservableProperty] public partial string? TurntableSheet { get; private set; }
+
     public void Update(HeadphoneSnapshot snapshot)
     {
         Name = snapshot.Name;
         StateText = Strings.Get("State" + snapshot.State);
+        TurntableSheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
 
         if (singleLayout != snapshot.IsSingleBattery)
         {
