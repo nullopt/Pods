@@ -7,6 +7,7 @@ public static class SettingKeys
 
     public static readonly Setting<bool> DisableHandsFree = new("disableHandsFree", false, Json.Boolean, true);
     public static readonly Setting<bool> AutoConnect = new("autoConnect", false, Json.Boolean, true);
+    public static readonly Setting<bool> CardCollapsed = new("cardCollapsed", false, Json.Boolean, true);
     public static readonly Setting<EarDetectionMode> EarDetection = new("earDetection", EarDetectionMode.PlayPause, Json.EarDetectionMode, true);
     public static readonly Setting<bool> PauseOnDisconnect = new("pauseOnDisconnect", true, Json.Boolean, true);
     public static readonly Setting<bool> PlayOnConnect = new("playOnConnect", false, Json.Boolean, true);

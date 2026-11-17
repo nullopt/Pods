@@ -24,4 +24,22 @@ public class FixtureTests
         Assert.Equal((inL, inR), (a.LeftInEar, a.RightInEar));
         Assert.Equal(playback, a.Playback?.ToString() ?? "");
     }
+
+    [Theory, MemberData(nameof(InCaseRows))]
+    public void BothInCase_MatchesCaptures(string hex, bool expected) =>
+        Assert.Equal(expected, AdvertDecoder.Decode(Convert.FromHexString(hex), -50, 1)!.BothInCase);
+
+    /// <summary>Each fixture row with whether both pods were in the case (from the row's comment).</summary>
+    public static TheoryData<string, bool> InCaseRows()
+    {
+        var data = new TheoryData<string, bool>();
+        var comment = "";
+        foreach (var line in File.ReadLines(Path.Combine(AppContext.BaseDirectory, "Fixtures", "adverts.tsv")))
+        {
+            if (line.StartsWith('#')) { comment = line; continue; }
+            if (line.Length == 0) continue;
+            data.Add(line.Split('	')[0], comment.Contains("Both pods in case", StringComparison.Ordinal));
+        }
+        return data;
+    }
 }

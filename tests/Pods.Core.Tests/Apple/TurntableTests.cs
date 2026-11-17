@@ -16,4 +16,17 @@ public class TurntableTests
 
     [Fact]
     public void Resolve_UnknownModelHasNone() => Assert.Null(Turntable.Resolve("2720", "00", Available));
+
+    [Fact]
+    public void Cut_SplitSheet() => Assert.Equal(103, Turntable.Cut("1420"));
+
+    [Fact]
+    public void Cut_ColourSheetHasOwnEntry() => Assert.Equal(94, Turntable.Cut("1120_66"));
+
+    [Fact]
+    public void Cut_SingleObjectSheetHasNone()
+    {
+        Assert.Null(Turntable.Cut("0a20"));
+        Assert.Null(Turntable.Cut("0a20_0f"));
+    }
 }

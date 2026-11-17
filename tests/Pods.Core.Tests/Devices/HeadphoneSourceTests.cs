@@ -413,4 +413,24 @@ public sealed class HeadphoneSourceTests : IDisposable
         time.Advance(HeadphoneSource.RequestTimeout);
         Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
     }
+
+    static readonly PairedDevice ProDevice = new("2c7600e3fda9", "Billy's AirPods Pro", "1420", false);
+
+    [Fact]
+    public void InCase_WhenBothPodsInCase()
+    {
+        StartWith(ProDevice);
+        BringUp(() => AdvertDecoder.Decode(Frames.Pro2(0x15), -50, 1)!);
+        Assert.True(Card(ProDevice.Id).IsInCase);
+        time.Advance(TimeSpan.FromSeconds(70));
+        Assert.False(Card(ProDevice.Id).IsInCase);
+    }
+
+    [Fact]
+    public void NotInCase_WhenPodsOut()
+    {
+        StartWith(ProDevice);
+        BringUp(() => AdvertDecoder.Decode(Frames.Pro2(0x01), -50, 1)!);
+        Assert.False(Card(ProDevice.Id).IsInCase);
+    }
 }

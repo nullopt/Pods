@@ -236,9 +236,10 @@ public sealed class HeadphoneSource(
     {
         var stream = Target(device.ModelId) == device.Id ? streams.GetValueOrDefault(device.ModelId) : null;
         var advert = stream?.Last;
+        var fresh = advert is not null && !stream!.Tracker.IsStale;
         var state = !adapterAvailable ? DeviceState.SearchingError
             : device.IsConnected ? DeviceState.Connected
-            : advert is not null && !stream!.Tracker.IsStale ? DeviceState.Disconnected
+            : fresh ? DeviceState.Disconnected
             : DeviceState.Searching;
         return new HeadphoneSnapshot(
             Key: device.Id,
@@ -248,7 +249,8 @@ public sealed class HeadphoneSource(
             State: state,
             Battery: advert is null ? null : stream!.Tracker.Battery,
             Playback: advert is null ? null : stream!.Tracker.Playback,
-            IsSingleBattery: ModelCatalog.MaxFamilyIds.Contains(device.ModelId));
+            IsSingleBattery: ModelCatalog.MaxFamilyIds.Contains(device.ModelId),
+            IsInCase: fresh && advert!.BothInCase);
     }
 
     /// <summary>The device a model's advert stream is shown on. Caller holds <see cref="gate"/>.</summary>
