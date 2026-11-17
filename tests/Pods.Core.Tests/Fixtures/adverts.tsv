@@ -1,0 +1,19 @@
+# Real AirPods Pro 2 adverts captured 2026-11-17 (spikes/AdvertSpike). Expected values are what was physically true;
+# battery from iOS rounded to the 10% step (iOS 100/100/97 and 96 -> 100/100/95). Address column dropped.
+# frame-hex	left	right	case	inL	inR	playback
+# Both pods in case, lid open - right pod broadcasting (13:15:05)
+071901142015aab911000053b75adb1705422a2ab3d2d73b4941a9	100	100	95	0	0	NoneIn
+# Both pods in case, lid open - left pod broadcasting (13:15:05)
+071901142075aab9110000c506778f264ad261ce202b008511c6a5	100	100	95	0	0	NoneIn
+# Both pods out of the case, none in ear; case battery not reported (13:15:37)
+071901142021aa8f1100045445e3adaaca60d9685282a35dd8d5d2	100	100		0	0	NoneIn
+# Right pod only in ear (13:16:12)
+071901142003aa8f1100046c2c047bdc27f473715fa6b39edbe24f	100	100		0	1	Partial
+# Right pod out again, none in ear (13:16:30)
+071901142001aa8f1100045ab74673e56fa759d3d3a0a91756de90	100	100		0	0	NoneIn
+# Left pod only in ear (13:16:33)
+071901142023aa8f110004b6cca68c7b7c5245c26f25c595b71f4e	100	100		1	0	Partial
+# Left pod in case, right in ear - right pod broadcasting (13:17:14)
+071901142013aaa91100046b8e7cb7e727e61b8114c14c1f9c2b51	100	100	95	0	1	Partial
+# Left pod in case, right in ear - left pod broadcasting (13:17:15)
+071901142073aa99320004b8b13d940b3b5482d1d1e3d17a838828	100	100	95	0	1	Partial
