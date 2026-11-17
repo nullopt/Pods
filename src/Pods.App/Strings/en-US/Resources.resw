@@ -19,14 +19,14 @@
   <data name="DevicesBluetoothOff.Text" xml:space="preserve"><value>Bluetooth is off or unavailable. Turn it on to see your devices.</value></data>
   <data name="ThresholdDefault" xml:space="preserve"><value>{0}% (app default)</value></data>
   <data name="TileUseDefault.Content" xml:space="preserve"><value>Use app default</value></data>
-  <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery warning</value></data>
+  <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery warning:</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Back</value></data>
   <data name="TileBack.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Back</value></data>
   <data name="SettingsTitle.Text" xml:space="preserve"><value>Settings</value></data>
-  <data name="AppLowBattery.Text" xml:space="preserve"><value>Low battery warning (default)</value></data>
-  <data name="AppLogLevel.Text" xml:space="preserve"><value>Log level</value></data>
+  <data name="AppLowBattery.Text" xml:space="preserve"><value>Default low battery warning:</value></data>
+  <data name="AppLogLevel.Text" xml:space="preserve"><value>Log level:</value></data>
   <data name="AppVersion" xml:space="preserve"><value>Version {0}</value></data>
   <data name="FlyoutSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings</value></data>
   <data name="FlyoutSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings</value></data>

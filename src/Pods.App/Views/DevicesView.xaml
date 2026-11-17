@@ -7,6 +7,30 @@
     FontFamily="{StaticResource PodsFont}">
 
     <UserControl.Resources>
+        <!--
+            Low battery sliders, after Apple's guidance: the track fills up to the thumb in the Windows accent
+            colour, tick marks for the 5% steps, labels only at the ends, a plain white thumb, and the value in
+            a tooltip while the thumb is held or pointed at.
+        -->
+        <views:PercentConverter x:Key="PercentConverter" />
+        <StaticResource x:Key="SliderTrackFill" ResourceKey="PodsRingTrack" />
+        <StaticResource x:Key="SliderTrackFillPointerOver" ResourceKey="PodsRingTrack" />
+        <StaticResource x:Key="SliderTrackFillPressed" ResourceKey="PodsRingTrack" />
+        <StaticResource x:Key="SliderTickBarFill" ResourceKey="PodsSecondaryText" />
+        <SolidColorBrush x:Key="SliderThumbBackground" Color="White" />
+        <SolidColorBrush x:Key="SliderThumbBackgroundPointerOver" Color="White" />
+        <SolidColorBrush x:Key="SliderThumbBackgroundPressed" Color="#F2F2F2" />
+        <SolidColorBrush x:Key="SliderOuterThumbBackground" Color="White" />
+        <Style x:Key="PodsThresholdSlider" TargetType="Slider">
+            <Setter Property="Minimum" Value="5" />
+            <Setter Property="Maximum" Value="50" />
+            <Setter Property="StepFrequency" Value="5" />
+            <Setter Property="SnapsTo" Value="StepValues" />
+            <Setter Property="TickFrequency" Value="5" />
+            <Setter Property="TickPlacement" Value="BottomRight" />
+            <Setter Property="ThumbToolTipValueConverter" Value="{StaticResource PercentConverter}" />
+        </Style>
+
         <!-- A small round, transparent button holding one glyph (info, back, settings). -->
         <Style x:Key="PodsIconButton" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
             <Setter Property="Width" Value="32" />
@@ -200,8 +224,13 @@
                                 <TextBlock x:Uid="TileLowBattery" FontSize="13" Foreground="{ThemeResource PodsSecondaryText}" />
                                 <TextBlock Text="{x:Bind ThresholdText, Mode=OneWay}" FontSize="15"
                                            Foreground="{ThemeResource PodsPrimaryText}" />
-                                <Slider Minimum="5" Maximum="50" StepFrequency="5" SnapsTo="StepValues" TickFrequency="5" TickPlacement="Outside"
-                                        IsThumbToolTipEnabled="False" Value="{x:Bind Threshold, Mode=TwoWay}" />
+                                <StackPanel>
+                                    <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind Threshold, Mode=TwoWay}" />
+                                    <Grid Margin="0,-6,0,0">
+                                        <TextBlock Text="5%" FontSize="11" Foreground="{ThemeResource PodsSecondaryText}" />
+                                        <TextBlock Text="50%" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource PodsSecondaryText}" />
+                                    </Grid>
+                                </StackPanel>
                                 <HyperlinkButton x:Uid="TileUseDefault" Padding="0" Command="{x:Bind UseAppDefaultCommand}"
                                                  Visibility="{x:Bind HasOwnThreshold, Mode=OneWay}" />
                             </StackPanel>
@@ -234,8 +263,13 @@
                 <TextBlock Text="{x:Bind ViewModel.AppSettings.ThresholdText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right"
                            Foreground="{ThemeResource PodsPrimaryText}" />
             </Grid>
-            <Slider Minimum="5" Maximum="50" StepFrequency="5" SnapsTo="StepValues" TickFrequency="5" TickPlacement="Outside"
-                                        IsThumbToolTipEnabled="False" Value="{x:Bind ViewModel.AppSettings.Threshold, Mode=TwoWay}" />
+            <StackPanel>
+                <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind ViewModel.AppSettings.Threshold, Mode=TwoWay}" />
+                <Grid Margin="0,-6,0,0">
+                    <TextBlock Text="5%" FontSize="11" Foreground="{ThemeResource PodsSecondaryText}" />
+                    <TextBlock Text="50%" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource PodsSecondaryText}" />
+                </Grid>
+            </StackPanel>
             <TextBlock x:Uid="AppLogLevel" FontSize="13" Margin="0,8,0,0" Foreground="{ThemeResource PodsSecondaryText}" />
             <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.AppSettings.LogLevels}"
                       SelectedIndex="{x:Bind ViewModel.AppSettings.SelectedLogLevelIndex, Mode=TwoWay}" />
