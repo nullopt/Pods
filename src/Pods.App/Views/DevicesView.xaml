@@ -125,14 +125,15 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Spacing="16">
-                                                <Border Height="110" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Left" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                <!-- 1.3x the 110 px frames, so each earbud sits over its L / R ring. -->
+                                                <Border Height="143" HorizontalAlignment="Center">
+                                                    <views:TurntableView Part="Left" FrameHeight="143" Sheet="{x:Bind Sheet, Mode=OneWay}"
                                                                          IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                                                 </Border>
                                                 <Grid HorizontalAlignment="Center">
                                                     <ContentControl Content="{x:Bind Buds}" ContentTemplate="{StaticResource RingTemplate}"
                                                                     Visibility="{x:Bind ShowCombinedBuds, Mode=OneWay}" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="16"
+                                                    <StackPanel Orientation="Horizontal" Spacing="4"
                                                                 Visibility="{x:Bind ShowSeparateBuds, Mode=OneWay}">
                                                         <ContentControl Content="{x:Bind Left}" ContentTemplate="{StaticResource RingTemplate}" />
                                                         <ContentControl Content="{x:Bind Right}" ContentTemplate="{StaticResource RingTemplate}" />
@@ -140,8 +141,8 @@
                                                 </Grid>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="16">
-                                                <Border Height="110" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Right" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                <Border Height="143" HorizontalAlignment="Center">
+                                                    <views:TurntableView Part="Right" FrameHeight="143" Sheet="{x:Bind Sheet, Mode=OneWay}"
                                                                          IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                                                 </Border>
                                                 <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}"

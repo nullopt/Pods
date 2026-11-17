@@ -113,7 +113,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         CanAct = adapterAvailable && !pending;
 
         Sheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
-        IsSplit = Sheet is not null && Turntable.Cut(Sheet) is not null;
+        IsSplit = Sheet is not null && Turntable.Parts(Sheet) is not null;
         IsSpinning = IsSplit ? snapshot.IsInCase : Sheet is not null;
         IsSingleBattery = snapshot.IsSingleBattery;
 

@@ -18,15 +18,25 @@ public class TurntableTests
     public void Resolve_UnknownModelHasNone() => Assert.Null(Turntable.Resolve("2720", "00", Available));
 
     [Fact]
-    public void Cut_SplitSheet() => Assert.Equal(103, Turntable.Cut("1420"));
+    public void Parts_SplitSheet() => Assert.Equal(new TurntableParts(2, 96, 111, 218), Turntable.Parts("1420"));
 
     [Fact]
-    public void Cut_ColourSheetHasOwnEntry() => Assert.Equal(94, Turntable.Cut("1120_66"));
+    public void Parts_ColourSheetHasOwnEntry() => Assert.Equal(new TurntableParts(7, 92, 98, 215), Turntable.Parts("1120_66"));
 
     [Fact]
-    public void Cut_SingleObjectSheetHasNone()
+    public void Parts_SingleObjectSheetHasNone()
     {
-        Assert.Null(Turntable.Cut("0a20"));
-        Assert.Null(Turntable.Cut("0a20_0f"));
+        Assert.Null(Turntable.Parts("0a20"));
+        Assert.Null(Turntable.Parts("0a20_0f"));
+    }
+
+    [Fact]
+    public void Parts_EarbudsLeftOfCase_NoOverlap()
+    {
+        foreach (var sheet in new[] { "0b20", "0f20", "1120", "1320", "1420", "2720", "3620" })
+        {
+            var p = Turntable.Parts(sheet)!.Value;
+            Assert.True(p.BudsStart < p.BudsEnd && p.BudsEnd <= p.CaseStart && p.CaseStart < p.CaseEnd, sheet);
+        }
     }
 }

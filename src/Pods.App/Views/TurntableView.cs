@@ -80,18 +80,17 @@ internal sealed partial class TurntableView : UserControl
 
         var frameWidth = (float)size.Width / Turntable.Columns;
         var frameHeight = (float)size.Height / Turntable.Rows;
-        var cut = Turntable.Cut(Sheet!);
-        if (Part != TurntablePart.Whole && cut is null)
+        var parts = Turntable.Parts(Sheet!);
+        if (Part != TurntablePart.Whole && parts is null)
         {
             Visibility = Visibility.Collapsed;
             return;
         }
-        var partX = Part == TurntablePart.Right ? cut!.Value : 0f;
-        var partWidth = Part switch
+        var (partX, partWidth) = Part switch
         {
-            TurntablePart.Left => cut!.Value,
-            TurntablePart.Right => frameWidth - cut!.Value,
-            _ => frameWidth,
+            TurntablePart.Left => (parts!.Value.BudsStart, parts.Value.BudsEnd - parts.Value.BudsStart),
+            TurntablePart.Right => (parts!.Value.CaseStart, parts.Value.CaseEnd - parts.Value.CaseStart),
+            _ => (0f, frameWidth),
         };
         var scale = double.IsNaN(FrameHeight) ? 1f : (float)(FrameHeight / frameHeight);
 
