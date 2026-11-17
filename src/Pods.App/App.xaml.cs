@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.Input;
 using H.NotifyIcon;
 using Microsoft.UI.Dispatching;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
@@ -11,6 +12,7 @@ using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
 using Pods.App.Logging;
 using Pods.App.Tray;
+using Pods.App.Views;
 using Pods.Core.Devices;
 using Pods.Core.Settings;
 using Serilog;
@@ -25,7 +27,9 @@ public partial class App : Application
     readonly TrayCardViewModel trayCard = new();
     bool trayLow;
     bool notificationsRegistered;
-    MainWindow? mainWindow;
+    TrayFlyoutWindow? flyout;
+    DevicesViewModel? flyoutDevices;
+    long flyoutClosedAt = long.MinValue / 2;
     DispatcherQueue? ui;
 
     public App() => InitializeComponent();
@@ -39,7 +43,7 @@ public partial class App : Application
 
     public SettingsStore Settings { get; private set; } = null!;
 
-    /// <summary>Devices shown in the window; scanning runs while the app runs.</summary>
+    /// <summary>Devices shown in the flyout and tray card; scanning runs while the app runs.</summary>
     internal IHeadphoneSource Headphones { get; private set; } = null!;
 
     protected override void OnLaunched(LaunchActivatedEventArgs args)
@@ -55,7 +59,7 @@ public partial class App : Application
 
         ui = DispatcherQueue.GetForCurrentThread();
         // Subscribed once, before registering, as the notification API requires.
-        AppNotificationManager.Default.NotificationInvoked += (_, _) => ui?.TryEnqueue(ShowMainWindow);
+        AppNotificationManager.Default.NotificationInvoked += (_, _) => ui?.TryEnqueue(OpenFlyout);
         RegisterNotifications();
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
@@ -63,9 +67,9 @@ public partial class App : Application
         Headphones.Start();
         PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
+        // Tray only: nothing shows until the icon is clicked.
         tray = CreateTray();
         OnHeadphonesChanged();
-        ShowMainWindow();
     }
 
     /// <summary>After sleep the watchers may be stale: restart them; the cards stay until the new lists arrive.</summary>
@@ -78,23 +82,53 @@ public partial class App : Application
     }
 
     /// <summary>A second launch was redirected here (single instance).</summary>
-    internal void OnActivatedAgain() => ui?.TryEnqueue(ShowMainWindow);
+    internal void OnActivatedAgain() => ui?.TryEnqueue(OpenFlyout);
 
-    /// <summary>Creates the window if none exists, else brings it to the front. Closing destroys it.</summary>
-    public void ShowMainWindow()
+    /// <summary>
+    /// Pressing the icon while the flyout is open takes focus from it, so it has already closed by the
+    /// time the click arrives; a click this soon after a close is that same press and leaves it closed.
+    /// </summary>
+    const long ReopenGuardMs = 300;
+
+    /// <summary>The icon's left click: opens the flyout, or closes it when open.</summary>
+    void ToggleFlyout()
     {
-        if (mainWindow is null)
+        if (flyout is not null) flyout.Close();
+        else if (Environment.TickCount64 - flyoutClosedAt >= ReopenGuardMs) OpenFlyout();
+    }
+
+    /// <summary>Opens the flyout above the tray icon, or brings an open one to the front. Closing destroys it.</summary>
+    void OpenFlyout()
+    {
+        if (flyout is not null)
         {
-            mainWindow = new MainWindow(Headphones, Settings);
-            mainWindow.Closed += (_, _) => mainWindow = null;
+            flyout.Activate();
+            return;
         }
-        mainWindow.Activate();
+        flyoutDevices = new DevicesViewModel(Headphones, Settings, ui!);
+        flyout = new TrayFlyoutWindow(new DevicesView(flyoutDevices));
+        flyout.Dismissed += OnFlyoutClosed;
+        if (trayHover is not null) trayHover.Suspended = true;
+        // Without the icon's position (the shell did not say), anchor to the corner of the main screen.
+        var rect = trayHover?.IconRect();
+        var work = DisplayArea.Primary.WorkArea;
+        if (rect is { } r) flyout.ShowAbove(r.Left, r.Top, r.Right, r.Bottom);
+        else flyout.ShowAbove(work.X + work.Width - 1, work.Y + work.Height, work.X + work.Width, work.Y + work.Height);
+    }
+
+    void OnFlyoutClosed()
+    {
+        flyoutDevices?.Dispose();
+        flyoutDevices = null;
+        flyout = null;
+        flyoutClosedAt = Environment.TickCount64;
+        if (trayHover is not null) trayHover.Suspended = false;
     }
 
     TaskbarIcon CreateTray()
     {
         var menu = new MenuFlyout();
-        menu.Items.Add(MenuItem("TrayOpen", ShowMainWindow));
+        menu.Items.Add(MenuItem("TrayOpen", OpenFlyout));
 #if DEBUG
         menu.Items.Add(MenuItem("TrayDemoDevices", ShowDemoDevices));
 #endif
@@ -109,7 +143,7 @@ public partial class App : Application
             IconSource = TrayIcon(trayLow),
             ContextMenuMode = ContextMenuMode.PopupMenu,
             ContextFlyout = menu,
-            LeftClickCommand = new RelayCommand(ShowMainWindow),
+            LeftClickCommand = new RelayCommand(ToggleFlyout),
             NoLeftClickDelay = true,
         };
         icon.TrayIcon.UseStandardTooltip = false;
@@ -120,6 +154,7 @@ public partial class App : Application
 
     void DisposeTray()
     {
+        flyout?.Close();
         trayHover?.Dispose();
         trayHover = null;
         tray?.Dispose();
@@ -216,8 +251,10 @@ public partial class App : Application
         Headphones.Changed += OnHeadphonesChangedAnyThread;
         Headphones.Start();
         OnHeadphonesChanged();
-        mainWindow?.Close();
-        ShowMainWindow();
+        // An open flyout still shows the old source's devices.
+        if (flyout is null) return;
+        flyout.Close();
+        OpenFlyout();
     }
 #endif
 
@@ -229,7 +266,6 @@ public partial class App : Application
         (Headphones as IDisposable)?.Dispose();
         DisposeTray();
         UnregisterNotifications();
-        mainWindow?.Close();
         Log.CloseAndFlush();
         Exit();
     }

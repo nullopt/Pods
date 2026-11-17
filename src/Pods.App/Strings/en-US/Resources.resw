@@ -9,9 +9,8 @@
   <data name="TrayOpen" xml:space="preserve"><value>Open Pods</value></data>
   <data name="TrayRestart" xml:space="preserve"><value>Restart</value></data>
   <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
-  <data name="MainWindowTitle" xml:space="preserve"><value>Pods</value></data>
   <data name="TrayDemoDevices" xml:space="preserve"><value>Demo devices</value></data>
-  <data name="DevicesTitle.Text" xml:space="preserve"><value>Devices</value></data>
+  <data name="DevicesTitle.Text" xml:space="preserve"><value>Pods</value></data>
   <data name="DevicesEmpty.Text" xml:space="preserve"><value>No AirPods are paired with this PC. Pair them in Windows Bluetooth settings and they will appear here.</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Not connected to this PC</value></data>
   <data name="StateSearching" xml:space="preserve"><value>Searching…</value></data>

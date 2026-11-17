@@ -43,6 +43,8 @@ internal abstract partial class TrayAnchoredWindow : Window
         Place();
         AppWindow.Show(activate);
         StyleCorners();
+        // Showing activates only within this app; a tray click lets us take the foreground from the shell.
+        if (activate) SetForegroundWindow(hwnd);
     }
 
     /// <summary>Called before each placement with the work area (pixels) and scale, to cap the content.</summary>
@@ -86,4 +88,8 @@ internal abstract partial class TrayAnchoredWindow : Window
 
     [LibraryImport("dwmapi.dll")]
     private static partial int DwmSetWindowAttribute(nint hwnd, int attribute, ref uint value, int size);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetForegroundWindow(nint hwnd);
 }

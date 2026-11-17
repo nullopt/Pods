@@ -69,7 +69,7 @@
             </ItemsRepeater.Layout>
             <ItemsRepeater.ItemTemplate>
                 <DataTemplate x:DataType="devices:DeviceCardViewModel">
-                    <Grid Width="216" Height="270" Padding="14" RowSpacing="10" CornerRadius="14"
+                    <Grid Width="216" Height="290" Padding="14" RowSpacing="10" CornerRadius="14"
                           Background="{ThemeResource PodsCardBackground}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
