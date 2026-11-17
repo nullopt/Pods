@@ -10,4 +10,16 @@
   <data name="TrayRestart" xml:space="preserve"><value>Restart</value></data>
   <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
   <data name="MainWindowTitle" xml:space="preserve"><value>Pods</value></data>
+  <data name="TrayDemoDevices" xml:space="preserve"><value>Demo devices</value></data>
+  <data name="DevicesTitle.Text" xml:space="preserve"><value>Devices</value></data>
+  <data name="DevicesEmpty.Text" xml:space="preserve"><value>Looking for your headphones… Open the case or put them on nearby.</value></data>
+  <data name="StateDisconnected" xml:space="preserve"><value>Not connected to this PC</value></data>
+  <data name="StateSearching" xml:space="preserve"><value>Searching…</value></data>
+  <data name="StateConnected" xml:space="preserve"><value>Connected</value></data>
+  <data name="StateSearchingError" xml:space="preserve"><value>Bluetooth unavailable</value></data>
+  <data name="StateMultipleConnection" xml:space="preserve"><value>Connected to several devices</value></data>
+  <data name="BatteryLeft" xml:space="preserve"><value>Left</value></data>
+  <data name="BatteryRight" xml:space="preserve"><value>Right</value></data>
+  <data name="BatteryCase" xml:space="preserve"><value>Case</value></data>
+  <data name="BatterySingle" xml:space="preserve"><value>Battery</value></data>
 </root>

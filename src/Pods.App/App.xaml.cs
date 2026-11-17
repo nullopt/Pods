@@ -5,7 +5,9 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
+using Pods.App.Devices;
 using Pods.App.Logging;
+using Pods.Core.Devices;
 using Pods.Core.Settings;
 using Serilog;
 
@@ -28,6 +30,9 @@ public partial class App : Application
 
     public SettingsStore Settings { get; private set; } = null!;
 
+    /// <summary>Devices shown in the window; scanning runs while the app runs.</summary>
+    internal IHeadphoneSource Headphones { get; private set; } = null!;
+
     protected override void OnLaunched(LaunchActivatedEventArgs args)
     {
         Directory.CreateDirectory(DataFolder);
@@ -40,6 +45,8 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
 
         ui = DispatcherQueue.GetForCurrentThread();
+        Headphones = new AdvertHeadphoneSource(new BleAdvertSource(), TimeProvider.System);
+        Headphones.Start();
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         tray = CreateTray();
         ShowMainWindow();
@@ -53,7 +60,7 @@ public partial class App : Application
     {
         if (mainWindow is null)
         {
-            mainWindow = new MainWindow();
+            mainWindow = new MainWindow(Headphones);
             mainWindow.Closed += (_, _) => mainWindow = null;
         }
         mainWindow.Activate();
@@ -63,6 +70,9 @@ public partial class App : Application
     {
         var menu = new MenuFlyout();
         menu.Items.Add(MenuItem("TrayOpen", ShowMainWindow));
+#if DEBUG
+        menu.Items.Add(MenuItem("TrayDemoDevices", ShowDemoDevices));
+#endif
         menu.Items.Add(MenuItem("TrayRestart", Restart));
         menu.Items.Add(new MenuFlyoutSeparator());
         menu.Items.Add(MenuItem("TrayExit", ExitApp));
@@ -97,8 +107,22 @@ public partial class App : Application
         tray = CreateTray();
     }
 
+#if DEBUG
+    /// <summary>Swaps the BLE source for demo devices until the next restart.</summary>
+    void ShowDemoDevices()
+    {
+        if (Headphones is FakeHeadphoneSource) return;
+        Headphones.Stop();
+        Headphones = new FakeHeadphoneSource(ui!);
+        Headphones.Start();
+        mainWindow?.Close();
+        ShowMainWindow();
+    }
+#endif
+
     void ExitApp()
     {
+        Headphones.Stop();
         tray?.Dispose();
         tray = null;
         mainWindow?.Close();

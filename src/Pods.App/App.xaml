@@ -7,6 +7,28 @@
             <ResourceDictionary.MergedDictionaries>
                 <XamlControlsResources xmlns="using:Microsoft.UI.Xaml.Controls" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Apple-style palette (iOS system colours); own values, no Apple assets. -->
+            <ResourceDictionary.ThemeDictionaries>
+                <ResourceDictionary x:Key="Light">
+                    <SolidColorBrush x:Key="PodsPageBackground" Color="#F2F2F7" />
+                    <SolidColorBrush x:Key="PodsCardBackground" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="PodsPrimaryText" Color="#000000" />
+                    <SolidColorBrush x:Key="PodsSecondaryText" Color="#8A8A8E" />
+                    <SolidColorBrush x:Key="PodsRingTrack" Color="#E5E5EA" />
+                    <SolidColorBrush x:Key="PodsGreen" Color="#34C759" />
+                    <SolidColorBrush x:Key="PodsRed" Color="#FF3B30" />
+                </ResourceDictionary>
+                <ResourceDictionary x:Key="Dark">
+                    <SolidColorBrush x:Key="PodsPageBackground" Color="#000000" />
+                    <SolidColorBrush x:Key="PodsCardBackground" Color="#1C1C1E" />
+                    <SolidColorBrush x:Key="PodsPrimaryText" Color="#FFFFFF" />
+                    <SolidColorBrush x:Key="PodsSecondaryText" Color="#8D8D93" />
+                    <SolidColorBrush x:Key="PodsRingTrack" Color="#38383A" />
+                    <SolidColorBrush x:Key="PodsGreen" Color="#30D158" />
+                    <SolidColorBrush x:Key="PodsRed" Color="#FF453A" />
+                </ResourceDictionary>
+            </ResourceDictionary.ThemeDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>
