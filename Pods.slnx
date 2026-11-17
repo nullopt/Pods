@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Pods.App/Pods.App.csproj">
+      <Platform Project="x64" />
+    </Project>
     <Project Path="src/Pods.Core/Pods.Core.csproj" />
   </Folder>
   <Folder Name="/tests/">

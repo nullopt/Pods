@@ -26,13 +26,17 @@ planned for v2.
 | `docs/protocol-apple.md` | Apple proximity-advert measurements on real hardware |
 | `docs/superpowers/plans/` | executable, test-first implementation plans |
 
-## Build and test
+## Building from source
 
-Requires the .NET 10 SDK on Windows 10 2004 or later.
+Requires the .NET 10 SDK on Windows 10 2004 or later (x64). No Visual Studio, Windows SDK,
+Developer Mode or certificate is needed: Pods is an ordinary unpackaged app.
 
 ```
-dotnet test Pods.slnx
+dotnet run --project src/Pods.App     # the tray app
+dotnet test Pods.slnx                 # unit tests
 ```
+
+Settings and logs live in `%LOCALAPPDATA%\Pods`.
 
 Watch live adverts from AirPods near the PC (open the case):
 
