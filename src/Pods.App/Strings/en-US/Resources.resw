@@ -12,11 +12,18 @@
   <data name="MainWindowTitle" xml:space="preserve"><value>Pods</value></data>
   <data name="TrayDemoDevices" xml:space="preserve"><value>Demo devices</value></data>
   <data name="DevicesTitle.Text" xml:space="preserve"><value>Devices</value></data>
-  <data name="DevicesEmpty.Text" xml:space="preserve"><value>Looking for your headphones… Open the case or put them on nearby.</value></data>
+  <data name="DevicesEmpty.Text" xml:space="preserve"><value>No AirPods are paired with this PC. Pair them in Windows Bluetooth settings and they will appear here.</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Not connected to this PC</value></data>
   <data name="StateSearching" xml:space="preserve"><value>Searching…</value></data>
   <data name="StateConnected" xml:space="preserve"><value>Connected</value></data>
-  <data name="StateSearchingError" xml:space="preserve"><value>Bluetooth unavailable</value></data>
+  <data name="StateSearchingError" xml:space="preserve"><value>Bluetooth is off</value></data>
+  <data name="DevicesBluetoothOff.Text" xml:space="preserve"><value>Bluetooth is off or unavailable. Turn it on to see your devices.</value></data>
+  <data name="CardConnect.Content" xml:space="preserve"><value>Connect</value></data>
+  <data name="CardDisconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="RequestConnecting" xml:space="preserve"><value>Connecting…</value></data>
+  <data name="RequestDisconnecting" xml:space="preserve"><value>Disconnecting…</value></data>
+  <data name="RequestConnectFailed" xml:space="preserve"><value>Couldn't connect</value></data>
+  <data name="RequestDisconnectFailed" xml:space="preserve"><value>Couldn't disconnect</value></data>
   <data name="StateMultipleConnection" xml:space="preserve"><value>Connected to several devices</value></data>
   <data name="BatteryLeft" xml:space="preserve"><value>Left</value></data>
   <data name="BatteryRight" xml:space="preserve"><value>Right</value></data>

@@ -15,6 +15,10 @@
                            Foreground="{ThemeResource PodsSecondaryText}"
                            Visibility="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" />
 
+                <TextBlock x:Uid="DevicesBluetoothOff" TextWrapping="Wrap" FontSize="15"
+                           Foreground="{ThemeResource PodsSecondaryText}"
+                           Visibility="{x:Bind ViewModel.IsAdapterUnavailable, Mode=OneWay}" />
+
                 <ItemsRepeater ItemsSource="{x:Bind ViewModel.Cards}">
                     <ItemsRepeater.Layout>
                         <StackLayout Spacing="12" />
@@ -24,6 +28,7 @@
                             <Border Background="{ThemeResource PodsCardBackground}" CornerRadius="18" Padding="20,16,20,18">
                                 <StackPanel Spacing="16">
                                     <views:TurntableView HorizontalAlignment="Center"
+                                                         Opacity="{x:Bind ContentOpacity, Mode=OneWay}"
                                                          Sheet="{x:Bind TurntableSheet, Mode=OneWay}" />
                                     <StackPanel Spacing="2">
                                         <TextBlock Text="{x:Bind Name, Mode=OneWay}" FontSize="17" FontWeight="SemiBold"
@@ -32,7 +37,18 @@
                                                    Foreground="{ThemeResource PodsSecondaryText}" />
                                     </StackPanel>
 
-                                    <ItemsRepeater ItemsSource="{x:Bind Batteries}">
+                                    <Grid>
+                                        <Button x:Uid="CardConnect" Style="{StaticResource AccentButtonStyle}"
+                                                Command="{x:Bind ConnectCommand}"
+                                                IsEnabled="{x:Bind CanAct, Mode=OneWay}"
+                                                Visibility="{x:Bind ShowConnect, Mode=OneWay}" />
+                                        <Button x:Uid="CardDisconnect"
+                                                Command="{x:Bind DisconnectCommand}"
+                                                IsEnabled="{x:Bind CanAct, Mode=OneWay}"
+                                                Visibility="{x:Bind ShowDisconnect, Mode=OneWay}" />
+                                    </Grid>
+
+                                    <ItemsRepeater ItemsSource="{x:Bind Batteries}" Opacity="{x:Bind ContentOpacity, Mode=OneWay}">
                                         <ItemsRepeater.Layout>
                                             <StackLayout Orientation="Horizontal" Spacing="20" />
                                         </ItemsRepeater.Layout>

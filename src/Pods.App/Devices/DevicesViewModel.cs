@@ -21,7 +21,11 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
 
     public ObservableCollection<DeviceCardViewModel> Cards { get; } = [];
 
+    /// <summary>No paired device to show while Bluetooth works.</summary>
     [ObservableProperty] public partial bool IsEmpty { get; private set; } = true;
+
+    /// <summary>No cards because Bluetooth is off or there is no adapter.</summary>
+    [ObservableProperty] public partial bool IsAdapterUnavailable { get; private set; }
 
     public void Dispose() => source.Changed -= OnChanged;
 
@@ -32,20 +36,22 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
     void Sync()
     {
         var current = source.Current;
+        var adapterAvailable = source.IsAdapterAvailable;
         for (var i = Cards.Count - 1; i >= 0; i--)
             if (!current.Any(s => s.Key == Cards[i].Key)) Cards.RemoveAt(i);
         for (var i = 0; i < current.Count; i++)
         {
             var snapshot = current[i];
             var index = IndexOf(snapshot.Key);
-            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot));
+            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot, source, adapterAvailable));
             else
             {
                 if (index != i) Cards.Move(index, i);
-                Cards[i].Update(snapshot);
+                Cards[i].Update(snapshot, adapterAvailable);
             }
         }
-        IsEmpty = Cards.Count == 0;
+        IsEmpty = Cards.Count == 0 && adapterAvailable;
+        IsAdapterUnavailable = Cards.Count == 0 && !adapterAvailable;
     }
 
     int IndexOf(string key)
