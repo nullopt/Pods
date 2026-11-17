@@ -1,0 +1,24 @@
+namespace Pods.Core.Settings;
+
+/// <summary>Settings keys and defaults, SPEC §8.1 (device-scoped) and §5.12 (global only).</summary>
+public static class SettingKeys
+{
+    static readonly SettingsJsonContext Json = SettingsJsonContext.Default;
+
+    public static readonly Setting<bool> DisableHandsFree = new("disableHandsFree", false, Json.Boolean, true);
+    public static readonly Setting<bool> AutoConnect = new("autoConnect", false, Json.Boolean, true);
+    public static readonly Setting<EarDetectionMode> EarDetection = new("earDetection", EarDetectionMode.PlayPause, Json.EarDetectionMode, true);
+    public static readonly Setting<bool> PauseOnDisconnect = new("pauseOnDisconnect", true, Json.Boolean, true);
+    public static readonly Setting<bool> PlayOnConnect = new("playOnConnect", false, Json.Boolean, true);
+    public static readonly Setting<bool> SwitchOutputOnConnect = new("switchOutputOnConnect", false, Json.Boolean, true);
+    public static readonly Setting<string?> OutOfEarOutputDevice = new("outOfEarOutputDevice", null, Json.String, true);
+    public static readonly Setting<int?> ConnectVolume = new("connectVolume", null, Json.NullableInt32, true);
+    public static readonly Setting<int> LowBatteryPercent = new("lowBatteryPercent", 30, Json.Int32, true);
+    public static readonly Setting<bool> KeepAudioAwake = new("keepAudioAwake", false, Json.Boolean, true);
+    public static readonly Setting<bool> WindowsBatteryFallback = new("windowsBatteryFallback", false, Json.Boolean, true);
+    public static readonly Setting<bool> SearchByRssi = new("searchByRssi", false, Json.Boolean, true);
+    public static readonly Setting<string?> CustomPicture = new("customPicture", null, Json.String, true);
+
+    /// <summary>Serilog minimum level name; global only.</summary>
+    public static readonly Setting<string> LogLevel = new("logLevel", "Warning", Json.String, false);
+}
