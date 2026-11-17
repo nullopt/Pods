@@ -15,7 +15,9 @@ namespace Pods.App.Devices;
 /// and a catalogued model (the product ID byte-swapped is the advert model ID). Each device's
 /// <see cref="BluetoothDevice"/> is held so its connection events keep arriving. After
 /// <see cref="Start"/>, <see cref="Current"/> keeps the previous list until the new enumeration has
-/// finished, so a restart after resume does not flash the cards away.
+/// finished, so a restart after resume does not flash the cards away. A newly paired device's
+/// hardware ID appears only after Windows has installed its drivers, so a pairing that did not
+/// qualify yet is read again on each later update.
 /// </summary>
 internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, IDisposable
 {
@@ -24,6 +26,7 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
 
     readonly Lock gate = new();
     readonly List<Entry> entries = [];
+    readonly HashSet<string> reading = [];
     List<PairedDevice> current = [];
     bool adapterAvailable;
     string? adapterAddress;
@@ -137,13 +140,14 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
             pairedWatcher = watcher;
             foreach (var entry in entries) entry.Device.Dispose();
             entries.Clear();
+            reading.Clear();
             enumerated = false;
             pendingAdds = 0;
         }
         StopWatcher(old);
         watcher.Added += (sender, info) => _ = AddAsync(sender, info);
         watcher.Removed += (sender, update) => Remove(sender, update.Id);
-        watcher.Updated += (_, _) => { };
+        watcher.Updated += (sender, update) => _ = RetryAsync(sender, update.Id);
         watcher.EnumerationCompleted += (sender, _) =>
         {
             lock (gate) if (sender == pairedWatcher) enumerated = true;
@@ -152,11 +156,29 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
         watcher.Start();
     }
 
+    /// <summary>Reads a pairing again that was skipped before, e.g. because its drivers were still installing.</summary>
+    async Task RetryAsync(DeviceWatcher sender, string aepId)
+    {
+        lock (gate)
+        {
+            if (sender != pairedWatcher || entries.Any(e => e.AepId == aepId) || reading.Contains(aepId)) return;
+        }
+        try
+        {
+            var info = await DeviceInformation.CreateFromIdAsync(aepId, [ContainerIdKey], DeviceInformationKind.AssociationEndpoint);
+            await AddAsync(sender, info);
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Re-reading paired device {Id} failed", aepId);
+        }
+    }
+
     async Task AddAsync(DeviceWatcher sender, DeviceInformation info)
     {
         lock (gate)
         {
-            if (sender != pairedWatcher) return;
+            if (sender != pairedWatcher || !reading.Add(info.Id)) return;
             pendingAdds++;
         }
         try
@@ -182,7 +204,11 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
         }
         finally
         {
-            lock (gate) if (sender == pairedWatcher) pendingAdds--;
+            lock (gate)
+            {
+                reading.Remove(info.Id);
+                if (sender == pairedWatcher) pendingAdds--;
+            }
             Publish();
         }
     }
