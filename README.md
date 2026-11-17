@@ -3,8 +3,8 @@
 AirPods companion for Windows: battery, ear detection and quick connect for Apple AirPods
 and Apple-chip Beats, as a lightweight tray app. No drivers, no admin rights.
 
-> **Early development.** Pods runs in the tray and shows the battery of nearby AirPods.
-> The features below are in progress.
+> **Early development.** Pods runs in the tray, lists your paired AirPods with their battery
+> and connection state, and connects or disconnects them. The features below are in progress.
 
 ## Features
 
