@@ -4,6 +4,7 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
 using Microsoft.Windows.AppNotifications;
@@ -13,6 +14,7 @@ using Pods.App.Devices;
 using Pods.App.Logging;
 using Pods.App.Tray;
 using Pods.App.Views;
+using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Settings;
 using Serilog;
@@ -70,6 +72,7 @@ public partial class App : Application
         // Tray only: nothing shows until the icon is clicked.
         tray = CreateTray();
         OnHeadphonesChanged();
+        ui.TryEnqueue(DispatcherQueuePriority.Low, WarmUpFlyout);
         // A notification clicked after Pods exited starts it with that activation instead of NotificationInvoked.
         if (AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.AppNotification) OpenFlyout();
     }
@@ -127,6 +130,31 @@ public partial class App : Application
         OnHeadphonesChanged();
         flyoutDevices?.Refresh();
     });
+
+    /// <summary>
+    /// Opens a throwaway flyout off screen once at startup and closes it after its first frame, so the
+    /// first real click does not pay for loading code and laying out the view.
+    /// </summary>
+    void WarmUpFlyout()
+    {
+        var devices = new DevicesViewModel(Headphones, Settings, ui!, () => { });
+        var view = new DevicesView(devices);
+        var window = new TrayFlyoutWindow(view);
+        var closed = false;
+        window.Dismissed += () =>
+        {
+            closed = true;
+            devices.Dispose();
+        };
+        view.Loaded += (_, _) => CompositionTarget.Rendering += CloseAfterFrame;
+        window.ShowOffScreen();
+
+        void CloseAfterFrame(object? sender, object e)
+        {
+            CompositionTarget.Rendering -= CloseAfterFrame;
+            if (!closed) window.Close();
+        }
+    }
 
     void OnFlyoutClosed()
     {
@@ -188,6 +216,7 @@ public partial class App : Application
             if (tray is not null) tray.IconSource = TrayIcon(trayLow);
         }
         trayCard.Update(connected, ThresholdFor);
+        TurntableView.Keep(connected.Select(s => Turntable.Resolve(s.ModelId, s.Colour, TurntableView.Available)));
     }
 
     /// <summary>Clicking a Pods notification opens the device list.</summary>

@@ -21,6 +21,14 @@ internal sealed partial class TurntableView : UserControl
 {
     static readonly string Folder = Path.Combine(AppContext.BaseDirectory, "Assets", "Turntables");
     static readonly Dictionary<string, WeakReference<SheetSurface>> Surfaces = [];
+    static List<SheetSurface> kept = [];
+
+    /// <summary>
+    /// Keeps these sheets decoded (and lets go of others kept before), so artwork for connected
+    /// headsets is ready when the flyout opens instead of decoding then. UI thread only.
+    /// </summary>
+    public static void Keep(IEnumerable<string?> sheets) =>
+        kept = [.. sheets.Select(SurfaceFor).OfType<SheetSurface>().Distinct()];
 
     /// <summary>Sheet names shipped with the app (file names without extension).</summary>
     public static IReadOnlySet<string> Available { get; } =

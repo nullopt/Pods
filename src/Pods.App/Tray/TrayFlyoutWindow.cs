@@ -1,5 +1,8 @@
+using System.Numerics;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Hosting;
+using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Input;
 using Windows.Graphics;
 using Windows.System;
@@ -13,6 +16,8 @@ namespace Pods.App.Tray;
 internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
 {
     const double MaxHeightFraction = 0.9;
+    static readonly TimeSpan EnterDuration = TimeSpan.FromMilliseconds(160);
+    const float EnterRise = 12;   // DIPs the content rises while fading in
     readonly ScrollViewer scroller;
     bool closed;
 
@@ -25,7 +30,16 @@ internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
         // Activation comes before the content loads, so focus is set on load.
         scroller.IsTabStop = true;
         scroller.UseSystemFocusVisuals = false;
-        scroller.Loaded += (_, _) => scroller.Focus(FocusState.Programmatic);
+        scroller.Loaded += (_, _) =>
+        {
+            scroller.Focus(FocusState.Programmatic);
+        };
+        // Until the content has drawn, the window shows the flyout's own background, not a default one,
+        // and the content starts invisible so the entrance hides that first empty frame.
+        if (Content is Panel root && Application.Current.Resources.TryGetValue("PodsPageBackground", out var background))
+            root.Background = background as Brush;
+        ElementCompositionPreview.SetIsTranslationEnabled(scroller, true);
+        ElementCompositionPreview.GetElementVisual(scroller).Opacity = 0;
         scroller.PreviewKeyDown += (_, e) =>
         {
             if (e.Key != VirtualKey.Escape) return;
@@ -48,6 +62,24 @@ internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
     public event Action? Dismissed;
 
     public void ShowAbove(int left, int top, int right, int bottom) => ShowAt(left, top, right, bottom, activate: true);
+
+    /// <summary>The content rises a little and fades in, like the system's tray flyouts (above a top taskbar it drops).</summary>
+    protected override void OnShown()
+    {
+        var visual = ElementCompositionPreview.GetElementVisual(scroller);
+        var compositor = visual.Compositor;
+        var ease = compositor.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1));
+        var fade = compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(0, 0);
+        fade.InsertKeyFrame(1, 1, ease);
+        fade.Duration = EnterDuration;
+        var rise = compositor.CreateVector3KeyFrameAnimation();
+        rise.InsertKeyFrame(0, new Vector3(0, OpensUpward ? EnterRise : -EnterRise, 0));
+        rise.InsertKeyFrame(1, Vector3.Zero, ease);
+        rise.Duration = EnterDuration;
+        visual.StartAnimation("Opacity", fade);
+        visual.StartAnimation("Translation", rise);
+    }
 
     void CloseOnce()
     {
