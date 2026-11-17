@@ -16,6 +16,9 @@ internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableO
     public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
     public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
 
+    /// <summary>The R's ink sits right of its box centre; this pulls it back by half a pixel.</summary>
+    public Microsoft.UI.Xaml.Thickness LetterMargin { get; } = badge == BatteryBadge.Right ? new(0, 0, 1, 0) : default;
+
     [ObservableProperty] public partial string Text { get; private set; } = BatteryText.Format(null);
     [ObservableProperty] public partial double Value { get; private set; }
     [ObservableProperty] public partial bool IsCharging { get; private set; }

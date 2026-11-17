@@ -25,6 +25,7 @@
                     <Grid Width="19" Height="19" VerticalAlignment="Center" Visibility="{x:Bind HasLetter}">
                         <Ellipse Fill="{ThemeResource PodsPrimaryText}" />
                         <TextBlock Text="{x:Bind Letter}" FontSize="12" FontWeight="Bold" TextLineBounds="Tight"
+                                   Margin="{x:Bind LetterMargin}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"
                                    Foreground="{ThemeResource PodsCardBackground}" />
                     </Grid>
