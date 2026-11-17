@@ -20,7 +20,13 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
 
     public IReadOnlyList<HeadphoneSnapshot> Current => [.. devices];
 
-    public event Action<HeadphoneSnapshot>? Changed;
+    public bool IsAdapterAvailable => true;
+
+    public event Action? Changed;
+
+    public void Connect(string key) { }
+
+    public void Disconnect(string key) { }
 
     public void Start()
     {
@@ -52,12 +58,11 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
             State = pro.State == DeviceState.Disconnected ? DeviceState.Searching : DeviceState.Disconnected,
         };
         devices[0] = pro;
-        Changed?.Invoke(pro);
 
         var max = devices[1];
         max = max with { Battery = max.Battery!.Value with { Left = Lower(max.Battery.Value.Left) } };
         devices[1] = max;
-        Changed?.Invoke(max);
+        Changed?.Invoke();
     }
 
     static int? Lower(int? value) => value is null or <= 10 ? 100 : value - 10;

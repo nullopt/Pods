@@ -1,0 +1,259 @@
+using Microsoft.Extensions.Time.Testing;
+using Pods.Core.Apple;
+using Pods.Core.Devices;
+using Pods.Core.Tests.Apple;
+
+namespace Pods.Core.Tests.Devices;
+
+public sealed class HeadphoneSourceTests : IDisposable
+{
+    sealed class FakeAdvertSource : IAppleAdvertSource
+    {
+        public event Action<AppleAdvert>? AdvertReceived;
+        public bool Running { get; private set; }
+        public int StartCount { get; private set; }
+        public void Start() { Running = true; StartCount++; }
+        public void Stop() => Running = false;
+        public void Raise(AppleAdvert advert) => AdvertReceived?.Invoke(advert);
+    }
+
+    sealed class FakePairedSource : IPairedDeviceSource
+    {
+        public IReadOnlyList<PairedDevice> Current { get; set; } = [];
+        public bool IsAdapterAvailable { get; set; } = true;
+        public event Action? Changed;
+        public void Start() { }
+        public void Stop() { }
+        public void Set(params PairedDevice[] devices) { Current = devices; Changed?.Invoke(); }
+        public void Raise() => Changed?.Invoke();
+    }
+
+    internal sealed class FakeConnectionControl : IConnectionControl
+    {
+        public List<string> ConnectCalls { get; } = [];
+        public List<string> DisconnectCalls { get; } = [];
+        public Func<Task<bool>> Result { get; set; } = () => Task.FromResult(true);
+        public Task<bool> ConnectAsync(string id) { ConnectCalls.Add(id); return Result(); }
+        public Task<bool> DisconnectAsync(string id) { DisconnectCalls.Add(id); return Result(); }
+    }
+
+    const string MaxId = "08ff4427c5d0";
+    const string Max2Id = "aabbccddeeff";
+    static readonly PairedDevice MaxDevice = new(MaxId, "Billy's AirPods Max", "0a20", false);
+    static readonly PairedDevice Max2Device = new(Max2Id, "Second Max", "0a20", false);
+
+    readonly FakeTimeProvider time = new();
+    readonly FakeAdvertSource adverts = new();
+    readonly FakePairedSource paired = new();
+    readonly FakeConnectionControl control = new();
+    readonly HeadphoneSource source;
+    int changes;
+
+    public HeadphoneSourceTests()
+    {
+        source = new HeadphoneSource(paired, adverts, control, time);
+        source.Changed += () => changes++;
+    }
+
+    public void Dispose() => source.Dispose();
+
+    static AppleAdvert Pro2(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x01), rssi, address)!;
+    static AppleAdvert Max(short rssi = -50, ulong address = 2) => AdvertDecoder.Decode(Frames.Make(0x0a, 0x20, 0x02, 0x09, 0x80), rssi, address)!;
+
+    /// <summary>Adverts during the first window, the window closes, then one advert is accepted.</summary>
+    void BringUp(Func<AppleAdvert> make)
+    {
+        adverts.Raise(make());
+        adverts.Raise(make());
+        time.Advance(HeadphoneSource.WindowLength);
+        adverts.Raise(make());
+    }
+
+    void StartWith(params PairedDevice[] devices)
+    {
+        paired.Current = devices;
+        source.Start();
+    }
+
+    HeadphoneSnapshot Card(string id) => source.Current.Single(c => c.Key == id);
+
+    [Fact]
+    public void PairedDevice_GetsCardBeforeAnyAdvert()
+    {
+        StartWith(MaxDevice);
+        var card = Assert.Single(source.Current);
+        Assert.Equal(MaxId, card.Key);
+        Assert.Equal("Billy's AirPods Max", card.Name);
+        Assert.Equal("0a20", card.ModelId);
+        Assert.Equal(DeviceState.Searching, card.State);
+        Assert.Null(card.Battery);
+        Assert.Equal("", card.Colour);
+        Assert.True(card.IsSingleBattery);
+    }
+
+    [Fact]
+    public void UncataloguedModel_GetsNoCard()
+    {
+        StartWith(new PairedDevice("c4c17d6ff526", "iPhone", "1d76", false));
+        Assert.Empty(source.Current);
+    }
+
+    [Fact]
+    public void Connected_IsConnectedState()
+    {
+        StartWith(MaxDevice with { IsConnected = true });
+        Assert.Equal(DeviceState.Connected, Card(MaxId).State);
+    }
+
+    [Fact]
+    public void AdvertsRouted_DisconnectedWithBattery()
+    {
+        StartWith(MaxDevice);
+        BringUp(() => Max());
+        var card = Card(MaxId);
+        Assert.Equal(DeviceState.Disconnected, card.State);
+        Assert.Equal(95, card.Battery?.Left);
+    }
+
+    [Fact]
+    public void StaleAdverts_SearchingKeepsBattery()
+    {
+        StartWith(MaxDevice);
+        BringUp(() => Max());
+        time.Advance(TimeSpan.FromSeconds(70));
+        var card = Card(MaxId);
+        Assert.Equal(DeviceState.Searching, card.State);
+        Assert.Equal(95, card.Battery?.Left);
+    }
+
+    [Fact]
+    public void UnpairedModelAdverts_Ignored()
+    {
+        StartWith(MaxDevice);
+        var before = changes;
+        BringUp(() => Pro2());
+        Assert.Equal([MaxId], source.Current.Select(c => c.Key));
+        Assert.Equal(before, changes);
+    }
+
+    [Fact]
+    public void Rename_UpdatesName()
+    {
+        StartWith(MaxDevice);
+        var before = changes;
+        paired.Set(MaxDevice with { Name = "Desk Max" });
+        Assert.Equal("Desk Max", Card(MaxId).Name);
+        Assert.Equal(before + 1, changes);
+    }
+
+    [Fact]
+    public void Unpair_RemovesCard()
+    {
+        StartWith(MaxDevice);
+        var before = changes;
+        paired.Set();
+        Assert.Empty(source.Current);
+        Assert.Equal(before + 1, changes);
+    }
+
+    [Fact]
+    public void TwoSameModel_RoutesToConnected()
+    {
+        StartWith(MaxDevice, Max2Device with { IsConnected = true });
+        BringUp(() => Max());
+        Assert.Null(Card(MaxId).Battery);
+        Assert.Equal(95, Card(Max2Id).Battery?.Left);
+    }
+
+    [Fact]
+    public void TwoSameModel_RoutesToLastConnected()
+    {
+        StartWith(MaxDevice, Max2Device with { IsConnected = true });
+        paired.Set(MaxDevice, Max2Device);
+        BringUp(() => Max());
+        Assert.Null(Card(MaxId).Battery);
+        Assert.Equal(95, Card(Max2Id).Battery?.Left);
+    }
+
+    [Fact]
+    public void TwoSameModel_RoutesToFirstByDefault()
+    {
+        StartWith(MaxDevice, Max2Device);
+        BringUp(() => Max());
+        Assert.Equal(95, Card(MaxId).Battery?.Left);
+        Assert.Null(Card(Max2Id).Battery);
+    }
+
+    [Fact]
+    public void AdapterOff_AllSearchingError()
+    {
+        StartWith(MaxDevice with { IsConnected = true }, Max2Device);
+        paired.IsAdapterAvailable = false;
+        paired.Raise();
+        Assert.False(source.IsAdapterAvailable);
+        Assert.All(source.Current, c => Assert.Equal(DeviceState.SearchingError, c.State));
+    }
+
+    [Fact]
+    public void AdapterOff_KeepsCardsAndIgnoresRemovals()
+    {
+        StartWith(MaxDevice);
+        paired.IsAdapterAvailable = false;
+        paired.Set();
+        Assert.Equal(DeviceState.SearchingError, Card(MaxId).State);
+        paired.IsAdapterAvailable = true;
+        paired.Raise();
+        Assert.Empty(source.Current);
+    }
+
+    [Fact]
+    public void NoPairedDevice_DoesNotScan()
+    {
+        StartWith();
+        Assert.False(adverts.Running);
+    }
+
+    [Fact]
+    public void FirstPairedDevice_StartsScanning_LastStops()
+    {
+        StartWith();
+        paired.Set(MaxDevice);
+        Assert.True(adverts.Running);
+        paired.Set();
+        Assert.False(adverts.Running);
+    }
+
+    [Fact]
+    public void AdapterOff_StopsScanning()
+    {
+        StartWith(MaxDevice);
+        paired.IsAdapterAvailable = false;
+        paired.Raise();
+        Assert.False(adverts.Running);
+    }
+
+    [Fact]
+    public void Restart_KeepsCardsUntilPairedListChanges()
+    {
+        StartWith(MaxDevice);
+        BringUp(() => Max());
+        var before = source.Current;
+        var count = changes;
+        source.Stop();
+        Assert.False(adverts.Running);
+        source.Start();
+        Assert.True(adverts.Running);
+        Assert.Equal(before, source.Current);
+        Assert.Equal(count, changes);
+    }
+
+    [Fact]
+    public void SameSnapshot_RaisesNoEvent()
+    {
+        StartWith(MaxDevice);
+        BringUp(() => Max());
+        var count = changes;
+        for (var i = 0; i < 5; i++) adverts.Raise(Max());
+        Assert.Equal(count, changes);
+    }
+}

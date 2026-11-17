@@ -16,7 +16,7 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
         this.source = source;
         this.ui = ui;
         source.Changed += OnChanged;
-        foreach (var snapshot in source.Current) Apply(snapshot);
+        Sync();
     }
 
     public ObservableCollection<DeviceCardViewModel> Cards { get; } = [];
@@ -25,20 +25,32 @@ internal sealed partial class DevicesViewModel : ObservableObject, IDisposable
 
     public void Dispose() => source.Changed -= OnChanged;
 
-    /// <summary>
-    /// Events from different threads can arrive out of order, so each one only triggers a re-read
-    /// of the source's latest snapshot for that device.
-    /// </summary>
-    void OnChanged(HeadphoneSnapshot snapshot) => ui.TryEnqueue(() =>
-    {
-        if (source.Current.FirstOrDefault(s => s.Key == snapshot.Key) is { } latest) Apply(latest);
-    });
+    /// <summary>Events can arrive out of order from different threads, so each one re-reads the whole list.</summary>
+    void OnChanged() => ui.TryEnqueue(Sync);
 
-    void Apply(HeadphoneSnapshot snapshot)
+    /// <summary>Updates, adds and removes cards so they match the source, in its order.</summary>
+    void Sync()
     {
-        var card = Cards.FirstOrDefault(c => c.Key == snapshot.Key);
-        if (card is null) Cards.Add(new DeviceCardViewModel(snapshot));
-        else card.Update(snapshot);
+        var current = source.Current;
+        for (var i = Cards.Count - 1; i >= 0; i--)
+            if (!current.Any(s => s.Key == Cards[i].Key)) Cards.RemoveAt(i);
+        for (var i = 0; i < current.Count; i++)
+        {
+            var snapshot = current[i];
+            var index = IndexOf(snapshot.Key);
+            if (index < 0) Cards.Insert(i, new DeviceCardViewModel(snapshot));
+            else
+            {
+                if (index != i) Cards.Move(index, i);
+                Cards[i].Update(snapshot);
+            }
+        }
         IsEmpty = Cards.Count == 0;
+    }
+
+    int IndexOf(string key)
+    {
+        for (var i = 0; i < Cards.Count; i++) if (Cards[i].Key == key) return i;
+        return -1;
     }
 }

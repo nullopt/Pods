@@ -45,7 +45,7 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
 
         ui = DispatcherQueue.GetForCurrentThread();
-        Headphones = new AdvertHeadphoneSource(new BleAdvertSource(), TimeProvider.System);
+        Headphones = new HeadphoneSource(new EmptyPairedDeviceSource(), new BleAdvertSource(), new NoConnectionControl(), TimeProvider.System);
         Headphones.Start();
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
         tray = CreateTray();
