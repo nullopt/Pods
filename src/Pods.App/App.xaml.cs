@@ -5,6 +5,8 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
+using Microsoft.Windows.AppNotifications;
+using Microsoft.Windows.AppNotifications.Builder;
 using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
 using Pods.App.Logging;
@@ -22,6 +24,7 @@ public partial class App : Application
     readonly LowBatteryMonitor lowBattery = new();
     readonly TrayCardViewModel trayCard = new();
     bool trayLow;
+    bool notificationsRegistered;
     MainWindow? mainWindow;
     DispatcherQueue? ui;
 
@@ -51,6 +54,9 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
 
         ui = DispatcherQueue.GetForCurrentThread();
+        // Subscribed once, before registering, as the notification API requires.
+        AppNotificationManager.Default.NotificationInvoked += (_, _) => ui?.TryEnqueue(ShowMainWindow);
+        RegisterNotifications();
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
         Headphones.Changed += OnHeadphonesChangedAnyThread;
@@ -125,13 +131,55 @@ public partial class App : Application
     void OnHeadphonesChanged()
     {
         var connected = Headphones.Current.Where(s => s.State == DeviceState.Connected).ToList();
-        lowBattery.Update(connected, ThresholdFor);
+        foreach (var alert in lowBattery.Update(connected, ThresholdFor)) ShowLowBatteryNotification(alert);
         if (trayLow != lowBattery.AnyLow)
         {
             trayLow = lowBattery.AnyLow;
             if (tray is not null) tray.IconSource = TrayIcon(trayLow);
         }
         trayCard.Update(connected, ThresholdFor);
+    }
+
+    /// <summary>Clicking a Pods notification opens the device list.</summary>
+    void RegisterNotifications()
+    {
+        try
+        {
+            AppNotificationManager.Default.Register();
+            notificationsRegistered = true;
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Notifications unavailable");
+        }
+    }
+
+    void UnregisterNotifications()
+    {
+        if (!notificationsRegistered) return;
+        notificationsRegistered = false;
+        try { AppNotificationManager.Default.Unregister(); }
+        catch (Exception e) { Log.Warning(e, "Unregistering notifications failed"); }
+    }
+
+    void ShowLowBatteryNotification(LowBatteryAlert alert)
+    {
+        if (!notificationsRegistered) return;
+        var body = string.Format(Strings.Get("LowBattery" + (alert.Part == BatteryPartKind.Buds ? "Single" : alert.Part)), alert.Name, alert.Percent);
+        Log.Information("Low battery: {Body}", body);
+        try
+        {
+            var notification = new AppNotificationBuilder()
+                .AddText(Strings.Get("LowBatteryTitle"))
+                .AddText(body)
+                .AddArgument("action", "open")
+                .BuildNotification();
+            AppNotificationManager.Default.Show(notification);
+        }
+        catch (Exception e)
+        {
+            Log.Warning(e, "Showing a notification failed");
+        }
     }
 
     int ThresholdFor(string key) => Settings.GetForDevice(SettingKeys.LowBatteryPercent, key);
@@ -142,6 +190,7 @@ public partial class App : Application
     void Restart()
     {
         DisposeTray();
+        UnregisterNotifications();
         Program.ReleaseInstanceKey();
         Log.CloseAndFlush();
         // Returns only if the restart could not be started.
@@ -150,6 +199,7 @@ public partial class App : Application
         Log.Error("Restart failed: {Reason}", failure);
         AppInstance.FindOrRegisterForKey("main");
         tray = CreateTray();
+        RegisterNotifications();
     }
 
 #if DEBUG
@@ -175,6 +225,7 @@ public partial class App : Application
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();
         DisposeTray();
+        UnregisterNotifications();
         mainWindow?.Close();
         Log.CloseAndFlush();
         Exit();
