@@ -256,4 +256,142 @@ public sealed class HeadphoneSourceTests : IDisposable
         for (var i = 0; i < 5; i++) adverts.Raise(Max());
         Assert.Equal(count, changes);
     }
+
+    // Requests
+
+    [Fact]
+    public void Connect_SetsConnectingAndCallsControl()
+    {
+        control.Result = () => new TaskCompletionSource<bool>().Task;
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        Assert.Equal(ConnectionRequest.Connecting, Card(MaxId).Request);
+        Assert.Equal([MaxId], control.ConnectCalls);
+    }
+
+    [Fact]
+    public void Connect_CompletesOnConnectedEvent()
+    {
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        paired.Set(MaxDevice with { IsConnected = true });
+        Assert.Equal(DeviceState.Connected, Card(MaxId).State);
+        Assert.Equal(ConnectionRequest.None, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_TimesOutToFailed()
+    {
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        time.Advance(HeadphoneSource.RequestTimeout);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_ControlFalse_Failed()
+    {
+        control.Result = () => Task.FromResult(false);
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_ControlThrows_Failed()
+    {
+        control.Result = () => throw new InvalidOperationException("boom");
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_ControlFaultedTask_Failed()
+    {
+        control.Result = () => Task.FromException<bool>(new InvalidOperationException("boom"));
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_WhilePending_IsIgnored()
+    {
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        source.Connect(MaxId);
+        Assert.Single(control.ConnectCalls);
+    }
+
+    [Fact]
+    public void Connect_AdapterOff_IsIgnored()
+    {
+        StartWith(MaxDevice);
+        paired.IsAdapterAvailable = false;
+        paired.Raise();
+        source.Connect(MaxId);
+        Assert.Empty(control.ConnectCalls);
+        Assert.Equal(ConnectionRequest.None, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_UnknownKey_IsIgnored()
+    {
+        StartWith(MaxDevice);
+        source.Connect("000000000000");
+        Assert.Empty(control.ConnectCalls);
+    }
+
+    [Fact]
+    public void Failed_ClearsOnNextStateChange()
+    {
+        control.Result = () => Task.FromResult(false);
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        Assert.Equal(ConnectionRequest.ConnectFailed, Card(MaxId).Request);
+        BringUp(() => Max());
+        Assert.Equal(DeviceState.Disconnected, Card(MaxId).State);
+        Assert.Equal(ConnectionRequest.None, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Failed_CanRetry()
+    {
+        control.Result = () => Task.FromResult(false);
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        source.Connect(MaxId);
+        Assert.Equal(2, control.ConnectCalls.Count);
+    }
+
+    [Fact]
+    public void Disconnect_CompletesOnDisconnectedEvent()
+    {
+        StartWith(MaxDevice with { IsConnected = true });
+        source.Disconnect(MaxId);
+        Assert.Equal(ConnectionRequest.Disconnecting, Card(MaxId).Request);
+        Assert.Equal([MaxId], control.DisconnectCalls);
+        paired.Set(MaxDevice);
+        Assert.Equal(ConnectionRequest.None, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Disconnect_TimesOutToFailed()
+    {
+        StartWith(MaxDevice with { IsConnected = true });
+        source.Disconnect(MaxId);
+        time.Advance(HeadphoneSource.RequestTimeout);
+        Assert.Equal(ConnectionRequest.DisconnectFailed, Card(MaxId).Request);
+    }
+
+    [Fact]
+    public void Connect_ThenUnpaired_NoTimeoutCrash()
+    {
+        StartWith(MaxDevice);
+        source.Connect(MaxId);
+        paired.Set();
+        time.Advance(HeadphoneSource.RequestTimeout);
+        Assert.Empty(source.Current);
+    }
 }
