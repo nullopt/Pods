@@ -84,6 +84,14 @@ public class AdvertDecoderTests
     }
 
     [Fact]
+    public void Decode_MaxChargingIsB7Bit4()
+    {
+        // Real frame captured while charging on Lightning, 2026-11-17 14:57:10 (iOS: 91%, charging).
+        var a = D(Convert.FromHexString("0719010a20020990850f4043159341d73a2dca73cd60ca09967bc9"));
+        Assert.Equal(new PodBattery(95, null, null, true, false, false), a.Battery);
+    }
+
+    [Fact]
     public void Decode_MaxColourRewrite()
     {
         Assert.Equal("31", D(Frames.Make(0x0a, 0x20, 0x24, 0x58, 0x13, colour: 0x11)).Colour);

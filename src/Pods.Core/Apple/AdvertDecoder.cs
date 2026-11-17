@@ -22,12 +22,12 @@ public static class AdvertDecoder
         PodBattery battery;
         if (IsMaxFamily(model))
         {
-            // AirPods Max (measured, SPEC §5.1): bit 5 = on head, one battery in the low nibble of b6.
-            // Both cups follow the on-head state; there is no second cup or case value.
+            // AirPods Max (measured, SPEC §5.1): bit 5 = on head, one battery in the low nibble of b6,
+            // charging = b7 bit 4. Both cups follow the on-head state; there is no second cup or case value.
             leftInEar = rightInEar = Bit(5);
             bothPresent = true;
             primaryIsLeft = true;
-            battery = new PodBattery(Percent(b6 & 0x0F), null, null, false, false, false);
+            battery = new PodBattery(Percent(b6 & 0x0F), null, null, (b7 & 0x10) != 0, false, false);
         }
         else
         {

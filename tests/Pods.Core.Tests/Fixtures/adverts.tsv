@@ -17,8 +17,10 @@
 071901142013aaa91100046b8e7cb7e727e61b8114c14c1f9c2b51	100	100	95	0	1	Partial
 # Left pod in case, right in ear - left pod broadcasting (13:17:15)
 071901142073aa99320004b8b13d940b3b5482d1d1e3d17a838828	100	100	95	0	1	Partial
-# Real AirPods Max (Lightning, space grey, 0a20) adverts captured 2026-11-17. Single battery read as 95 (not checked
-# against iOS); no second-cup or case value. On head = status bit 5.
+# Real AirPods Max (Lightning, space grey, 0a20) adverts captured 2026-11-17. Single battery read as 95 (iOS 91%
+# in the charging run); no second-cup or case value. On head = status bit 5.
 0719010a20020980830f40fa715556ba56f1196db20fc6772e25cc	95			0	0	NoneIn
 0719010a20220980050f4565772d817e8fbf6e0c9303a2bc7e4baa	95			1	1	AllIn
 0719010a20020980860f44b1cae77140fb34134fbbdc76fb09db9a	95			0	0	NoneIn
+# Max charging on Lightning, off head (14:57:10; iOS 91%)
+0719010a20020990850f4043159341d73a2dca73cd60ca09967bc9	95			0	0	NoneIn
