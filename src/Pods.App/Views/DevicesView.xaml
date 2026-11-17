@@ -10,12 +10,12 @@
         <!-- A battery ring with its percentage below, as on the iPhone case-open card. -->
         <DataTemplate x:Key="RingTemplate" x:DataType="devices:BatteryViewModel">
             <StackPanel Spacing="8" HorizontalAlignment="Center">
-                <Grid Width="56" Height="56" HorizontalAlignment="Center">
-                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="56" Height="56"
+                <Grid Width="{x:Bind RingSize}" Height="{x:Bind RingSize}" HorizontalAlignment="Center">
+                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="{x:Bind RingSize}" Height="{x:Bind RingSize}"
                                   Value="{x:Bind Value, Mode=OneWay}"
                                   Background="{ThemeResource PodsRingTrack}" Foreground="{ThemeResource PodsGreen}"
                                   Visibility="{x:Bind IsNormal, Mode=OneWay}" />
-                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="56" Height="56"
+                    <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="{x:Bind RingSize}" Height="{x:Bind RingSize}"
                                   Value="{x:Bind Value, Mode=OneWay}"
                                   Background="{ThemeResource PodsRingTrack}" Foreground="{ThemeResource PodsRed}"
                                   Visibility="{x:Bind IsLow, Mode=OneWay}" />
@@ -131,9 +131,8 @@
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
                                             <StackPanel Spacing="16">
-                                                <!-- 1.3x the 110 px frames, so each earbud sits over its L / R ring. -->
-                                                <Border Height="143" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Left" FrameHeight="143" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                <Border Height="110" HorizontalAlignment="Center">
+                                                    <views:TurntableView Part="Left" Sheet="{x:Bind Sheet, Mode=OneWay}"
                                                                          IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                                                 </Border>
                                                 <Grid HorizontalAlignment="Center">
@@ -151,8 +150,8 @@
                                                 </Grid>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1" Spacing="16">
-                                                <Border Height="143" HorizontalAlignment="Center">
-                                                    <views:TurntableView Part="Right" FrameHeight="143" Sheet="{x:Bind Sheet, Mode=OneWay}"
+                                                <Border Height="110" HorizontalAlignment="Center">
+                                                    <views:TurntableView Part="Right" Sheet="{x:Bind Sheet, Mode=OneWay}"
                                                                          IsSpinning="{x:Bind IsSpinning, Mode=OneWay}" />
                                                 </Border>
                                                 <ContentControl Content="{x:Bind Case}" ContentTemplate="{StaticResource RingTemplate}"

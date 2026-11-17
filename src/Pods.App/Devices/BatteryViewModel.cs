@@ -16,6 +16,9 @@ internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableO
     public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
     public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
 
+    /// <summary>Ring diameter in DIPs: separate L / R rings are smaller so each fits under its earbud.</summary>
+    public double RingSize { get; } = badge is BatteryBadge.Left or BatteryBadge.Right ? 44 : 56;
+
     [ObservableProperty] public partial string Text { get; private set; } = BatteryText.Format(null);
     [ObservableProperty] public partial double Value { get; private set; }
     [ObservableProperty] public partial bool IsCharging { get; private set; }
