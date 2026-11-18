@@ -12,4 +12,8 @@ $iscc = @("$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe", "${env:ProgramFile
     Where-Object { Test-Path $_ } | Select-Object -First 1
 if (-not $iscc) { throw 'Inno Setup 6 not found. Install it: winget install JRSoftware.InnoSetup' }
 & $iscc /Q (Join-Path $PSScriptRoot 'Pods.iss')
-exit $LASTEXITCODE
+if ($LASTEXITCODE) { exit $LASTEXITCODE }
+$setup = Get-ChildItem (Join-Path $root 'artifacts\PodsSetup-*.exe') | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+Write-Host "Built $($setup.Name). Next:"
+Write-Host "  dotnet run --project tools/Pods.ReleaseSigner -- sign artifacts\$($setup.Name)"
+Write-Host "  installer\publish.ps1 -Notes <release-notes.md>"

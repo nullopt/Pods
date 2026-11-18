@@ -44,6 +44,14 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\Pods.exe"; Description: "Launch Pods"; Flags: nowait postinstall skipifsilent
+; Pods' updater installs silently with /LAUNCH=1 and has exited by then, so start it again.
+Filename: "{app}\Pods.exe"; Flags: nowait; Check: LaunchRequested
+
+[Code]
+function LaunchRequested: Boolean;
+begin
+  Result := ExpandConstant('{param:LAUNCH|0}') = '1';
+end;
 
 [UninstallRun]
 Filename: "{sys}\taskkill.exe"; Parameters: "/F /IM Pods.exe"; Flags: runhidden; RunOnceId: "KillPods"
