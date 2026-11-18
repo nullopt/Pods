@@ -1,5 +1,11 @@
 ; Per-user installer for Pods. Build with installer\build.ps1.
-#define AppVersion GetVersionNumbersString(AddBackslash(SourcePath) + "..\artifacts\publish\Pods.exe")
+; Major.Minor.Patch from Pods.exe, which takes <Version> from Pods.App.csproj.
+#define Major
+#define Minor
+#define Patch
+#define Build
+#expr GetVersionComponents(AddBackslash(SourcePath) + "..\artifacts\publish\Pods.exe", Major, Minor, Patch, Build)
+#define AppVersion Str(Major) + "." + Str(Minor) + "." + Str(Patch)
 
 [Setup]
 AppId={{6F0B7C52-4E8A-4C1B-9F3E-2B6D3A1E7C44}
