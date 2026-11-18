@@ -24,3 +24,12 @@
 0719010a20020980860f44b1cae77140fb34134fbbdc76fb09db9a	95			0	0	NoneIn
 # Max charging on Lightning, off head (14:57:10; iOS 91%)
 0719010a20020990850f4043159341d73a2dca73cd60ca09967bc9	95			0	0	NoneIn
+# Capture 2026-11-18 01:17 (AirPods Pro 2 connected to the PC). Battery as decoded (no iOS reading taken).
+# Both pods in ear - left pod broadcasting (01:20:17)
+07190114202ba98f110004ee21a5091ebf3feea28983c42bb78592	95	100		1	1	AllIn
+# Both pods in ear - right pod broadcasting (01:18:53)
+07190114200b9a8f1100050a0a6741a01b2c17a5bb7696ee471da8	95	100		1	1	AllIn
+# Left out, right in ear - left pod broadcasting (01:20:53)
+071901142029a98f110004f11fa2b6629ab640e3cfdd695528f684	95	100		0	1	Partial
+# Left out, right in ear - right pod broadcasting (01:20:29)
+0719011420039a8f110004f94492b7cec1da1692788c715522e329	95	100		0	1	Partial
