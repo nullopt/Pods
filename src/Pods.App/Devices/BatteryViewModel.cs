@@ -13,6 +13,12 @@ internal sealed partial class BatteryViewModel(BatteryBadge badge) : ObservableO
     public string Letter { get; } = badge switch { BatteryBadge.Left => "L", BatteryBadge.Right => "R", _ => "" };
     public bool HasCaseBadge { get; } = badge == BatteryBadge.Case;
 
+    /// <summary>
+    /// Fixed width for the ring and its label, room for "100%" after the badge, so the rings stay put
+    /// when the percentage text gets shorter or longer.
+    /// </summary>
+    public double SlotWidth { get; } = badge == BatteryBadge.Case ? 62 : 56;
+
     [ObservableProperty] public partial string Text { get; private set; } = BatteryText.Format(null);
     [ObservableProperty] public partial double Value { get; private set; }
     [ObservableProperty] public partial bool IsCharging { get; private set; }

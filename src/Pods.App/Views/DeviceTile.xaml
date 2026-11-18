@@ -11,7 +11,7 @@
     <UserControl.Resources>
         <!-- A 44 px battery ring with its percentage below, as on the iPhone case-open card. -->
         <DataTemplate x:Key="RingTemplate" x:DataType="devices:BatteryViewModel">
-            <StackPanel Spacing="6" HorizontalAlignment="Center">
+            <StackPanel Spacing="6" HorizontalAlignment="Center" Width="{x:Bind SlotWidth}">
                 <Grid Width="44" Height="44" HorizontalAlignment="Center">
                     <ProgressRing IsIndeterminate="False" Minimum="0" Maximum="100" Width="44" Height="44"
                                   Value="{x:Bind Value, Mode=OneWay}"
