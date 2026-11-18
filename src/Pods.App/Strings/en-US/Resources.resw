@@ -10,6 +10,7 @@
   <data name="TrayRestart" xml:space="preserve"><value>Restart</value></data>
   <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
   <data name="TrayDemoDevices" xml:space="preserve"><value>Demo devices</value></data>
+  <data name="TrayDemoLidPopup" xml:space="preserve"><value>Demo lid popup</value></data>
   <data name="DevicesTitle.Text" xml:space="preserve"><value>Pods</value></data>
   <data name="DevicesEmpty.Text" xml:space="preserve"><value>No AirPods are paired with this PC. Pair them in Windows Bluetooth settings and they will appear here.</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Not connected to this PC</value></data>
@@ -19,6 +20,7 @@
   <data name="DevicesBluetoothOff.Text" xml:space="preserve"><value>Bluetooth is off or unavailable. Turn it on to see your devices.</value></data>
   <data name="ThresholdDefault" xml:space="preserve"><value>{0}% (app default)</value></data>
   <data name="TileUseDefault.Content" xml:space="preserve"><value>Use app default</value></data>
+  <data name="PopupClose" xml:space="preserve"><value>Close</value></data>
   <data name="TileLidPopup.Header" xml:space="preserve"><value>Show popup when case opens</value></data>
   <data name="TileLidPopup.OnContent" xml:space="preserve"><value>On</value></data>
   <data name="TileLidPopup.OffContent" xml:space="preserve"><value>Off</value></data>

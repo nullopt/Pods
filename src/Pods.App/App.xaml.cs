@@ -30,6 +30,7 @@ public partial class App : Application
     bool trayLow;
     bool notificationsRegistered;
     TrayFlyoutWindow? flyout;
+    LidPopupWindow? lidPopup;
     DevicesViewModel? flyoutDevices;
     long flyoutClosedAt = long.MinValue / 2;
     DispatcherQueue? ui;
@@ -66,6 +67,8 @@ public partial class App : Application
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
         Headphones.Changed += OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened += OnLidOpenedAnyThread;
+        Headphones.LidClosed += OnLidClosedAnyThread;
         Headphones.Start();
         PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
@@ -171,6 +174,7 @@ public partial class App : Application
         menu.Items.Add(MenuItem("TrayOpen", OpenFlyout));
 #if DEBUG
         menu.Items.Add(MenuItem("TrayDemoDevices", ShowDemoDevices));
+        menu.Items.Add(MenuItem("TrayDemoLidPopup", () => (Headphones as FakeHeadphoneSource)?.RaiseLidOpened()));
 #endif
         menu.Items.Add(MenuItem("TrayRestart", Restart));
         menu.Items.Add(new MenuFlyoutSeparator());
@@ -195,6 +199,7 @@ public partial class App : Application
     void DisposeTray()
     {
         flyout?.Close();
+        lidPopup?.Close();
         trayHover?.Dispose();
         trayHover = null;
         tray?.Dispose();
@@ -217,6 +222,40 @@ public partial class App : Application
         }
         trayCard.Update(connected, ThresholdFor);
         TurntableView.Keep(connected.Select(s => Turntable.Resolve(s.ModelId, s.Colour, TurntableView.Available)));
+        if (lidPopup is not null)
+        {
+            if (Headphones.Current.FirstOrDefault(s => s.Key == lidPopup.Key) is { } shown) lidPopup.Card.Update(shown, Headphones.IsAdapterAvailable);
+            else lidPopup.Dismiss();
+        }
+    }
+
+    void OnLidOpenedAnyThread(string key) => ui?.TryEnqueue(() => OnLidOpened(key));
+
+    void OnLidClosedAnyThread(string key) => ui?.TryEnqueue(() =>
+    {
+        if (lidPopup?.Key == key) lidPopup.Dismiss();
+    });
+
+    /// <summary>A case opened near the PC: show its tile at the bottom of the screen, if the device wants that.</summary>
+    void OnLidOpened(string key)
+    {
+        if (Headphones.Current.FirstOrDefault(s => s.Key == key) is not { } snapshot
+            || !LidPopupSetting.IsOn(Settings, key, snapshot.ModelId)) return;
+        if (lidPopup?.Key == key)
+        {
+            lidPopup.RestartTimer();
+            return;
+        }
+        lidPopup?.Dismiss();
+        var card = new DeviceCardViewModel(snapshot, Headphones, Settings, Headphones.IsAdapterAvailable, OnSettingsChanged);
+        var popup = new LidPopupWindow(card, trayHover?.IconRect());
+        popup.Dismissed += () =>
+        {
+            if (lidPopup == popup) lidPopup = null;
+        };
+        lidPopup = popup;
+        Log.Information("Lid opened: {Name}", snapshot.Name);
+        popup.Show();
     }
 
     /// <summary>Clicking a Pods notification opens the device list.</summary>
@@ -287,9 +326,14 @@ public partial class App : Application
     {
         if (Headphones is FakeHeadphoneSource) return;
         Headphones.Changed -= OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened -= OnLidOpenedAnyThread;
+        Headphones.LidClosed -= OnLidClosedAnyThread;
         Headphones.Stop();
+        lidPopup?.Close();
         Headphones = new FakeHeadphoneSource(ui!);
         Headphones.Changed += OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened += OnLidOpenedAnyThread;
+        Headphones.LidClosed += OnLidClosedAnyThread;
         Headphones.Start();
         OnHeadphonesChanged();
         // An open flyout still shows the old source's devices.
@@ -303,6 +347,8 @@ public partial class App : Application
     {
         PowerManager.SystemSuspendStatusChanged -= OnSuspendStatusChanged;
         Headphones.Changed -= OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened -= OnLidOpenedAnyThread;
+        Headphones.LidClosed -= OnLidClosedAnyThread;
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();
         DisposeTray();
