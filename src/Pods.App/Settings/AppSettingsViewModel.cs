@@ -5,7 +5,7 @@ using Serilog;
 
 namespace Pods.App.Settings;
 
-/// <summary>App-wide settings on the back of the flyout: the default low battery warning and the log level.</summary>
+/// <summary>App-wide settings on the back of the flyout: defaults for every device, and the log level.</summary>
 internal sealed partial class AppSettingsViewModel : ObservableObject
 {
     readonly SettingsStore settings;
@@ -22,6 +22,11 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
         // Kept inside the slider's range so it never pushes a corrected value back as a change.
         threshold = Math.Clamp(settings.Get(SettingKeys.LowBatteryPercent), SettingChoices.LowBatteryMin, SettingChoices.LowBatteryMax);
         ThresholdText = $"{(int)threshold}%";
+
+        earDetection = settings.Get(SettingKeys.EarDetection) == EarDetectionMode.PlayPause;
+        pauseOnDisconnect = settings.Get(SettingKeys.PauseOnDisconnect);
+        playOnConnect = settings.Get(SettingKeys.PlayOnConnect);
+        autoConnect = settings.Get(SettingKeys.AutoConnect);
 
         var level = settings.Get(SettingKeys.LogLevel);
         var index = SettingChoices.LogLevels.ToList().FindIndex(l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
@@ -49,6 +54,41 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
 
     string thresholdText = "";
     public string ThresholdText { get => thresholdText; private set => SetProperty(ref thresholdText, value); }
+
+    bool earDetection, pauseOnDisconnect, playOnConnect, autoConnect;
+
+    public bool EarDetection
+    {
+        get => earDetection;
+        set => SetDefault(ref earDetection, value, () =>
+            settings.SetGlobal(SettingKeys.EarDetection, value ? EarDetectionMode.PlayPause : EarDetectionMode.Off));
+    }
+
+    public bool PauseOnDisconnect
+    {
+        get => pauseOnDisconnect;
+        set => SetDefault(ref pauseOnDisconnect, value, () => settings.SetGlobal(SettingKeys.PauseOnDisconnect, value));
+    }
+
+    public bool PlayOnConnect
+    {
+        get => playOnConnect;
+        set => SetDefault(ref playOnConnect, value, () => settings.SetGlobal(SettingKeys.PlayOnConnect, value));
+    }
+
+    public bool AutoConnect
+    {
+        get => autoConnect;
+        set => SetDefault(ref autoConnect, value, () => settings.SetGlobal(SettingKeys.AutoConnect, value));
+    }
+
+    /// <summary>Writes a default, then lets devices that follow it show the new value.</summary>
+    void SetDefault(ref bool field, bool value, Action write, [System.Runtime.CompilerServices.CallerMemberName] string? name = null)
+    {
+        if (!SetProperty(ref field, value, name)) return;
+        Save(write);
+        settingsChanged();
+    }
 
     int selectedLogLevelIndex;
     public int SelectedLogLevelIndex

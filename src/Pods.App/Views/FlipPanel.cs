@@ -12,8 +12,9 @@ namespace Pods.App.Views;
 
 /// <summary>
 /// Two faces in one place; setting <see cref="IsFlipped"/> turns the panel about its vertical axis
-/// to show the back (a short 3D turn). Both faces stay laid out, so the panel keeps the size of the
-/// larger one and does not jump when it turns. Each face sits in a host that, while hidden, is
+/// to show the back (a short 3D turn). Both faces stay laid out and the panel takes the front's
+/// height (the wider face's width), so it does not jump when it turns; a taller back gets only that
+/// height and should scroll. Each face sits in a host that, while hidden, is
 /// transparent, disabled (out of the Tab order) and hidden from screen readers.
 /// </summary>
 internal sealed partial class FlipPanel : Grid
@@ -51,6 +52,14 @@ internal sealed partial class FlipPanel : Grid
         HorizontalContentAlignment = HorizontalAlignment.Stretch,
         VerticalContentAlignment = VerticalAlignment.Stretch,
     };
+
+    protected override Windows.Foundation.Size MeasureOverride(Windows.Foundation.Size availableSize)
+    {
+        frontHost.Measure(availableSize);
+        var front = frontHost.DesiredSize;
+        backHost.Measure(new Windows.Foundation.Size(availableSize.Width, front.Height));
+        return new Windows.Foundation.Size(Math.Max(front.Width, backHost.DesiredSize.Width), front.Height);
+    }
 
     public UIElement? Front { get => (UIElement?)GetValue(FrontProperty); set => SetValue(FrontProperty, value); }
     public UIElement? Back { get => (UIElement?)GetValue(BackProperty); set => SetValue(BackProperty, value); }

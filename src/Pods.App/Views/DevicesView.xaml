@@ -132,21 +132,47 @@
                                        Foreground="{ThemeResource PodsPrimaryText}" />
                         </Grid>
                         <ScrollViewer Grid.Row="1">
-                            <StackPanel Spacing="6">
-                                <TextBlock x:Uid="TileLowBattery" FontSize="13" Foreground="{ThemeResource PodsSecondaryText}" />
-                                <TextBlock Text="{x:Bind ThresholdText, Mode=OneWay}" FontSize="15"
-                                           Foreground="{ThemeResource PodsPrimaryText}" />
-                                <StackPanel>
-                                    <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind Threshold, Mode=TwoWay}" />
-                                    <Grid Margin="0,2,0,0">
-                                        <TextBlock Text="5%" FontSize="11" Foreground="{ThemeResource PodsSecondaryText}" />
-                                        <TextBlock Text="50%" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource PodsSecondaryText}" />
-                                    </Grid>
-                                </StackPanel>
+                            <StackPanel Spacing="4">
+                                <Grid>
+                                    <TextBlock x:Uid="TileLowBattery" FontSize="13" Foreground="{ThemeResource PodsSecondaryText}" />
+                                    <TextBlock Text="{x:Bind ThresholdText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right"
+                                               Foreground="{ThemeResource PodsPrimaryText}" />
+                                </Grid>
+                                <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind Threshold, Mode=TwoWay}" />
                                 <HyperlinkButton x:Uid="TileUseDefault" Padding="0" Command="{x:Bind UseAppDefaultCommand}"
                                                  Visibility="{x:Bind HasOwnThreshold, Mode=OneWay}" />
-                                <ToggleSwitch x:Uid="TileLidPopup" Margin="0,6,0,0" IsOn="{x:Bind LidPopup, Mode=TwoWay}"
-                                              Visibility="{x:Bind ShowLidPopupSetting}" />
+                                <Grid ColumnSpacing="8" Visibility="{x:Bind ShowEarDetectionSetting}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="EarLabel" x:Uid="TileEarDetection" Style="{StaticResource PodsRowLabel}" />
+                                    <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind EarDetection, Mode=TwoWay}"
+                                                  AutomationProperties.LabeledBy="{Binding ElementName=EarLabel}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="PauseLabel" x:Uid="TilePauseOnDisconnect" Style="{StaticResource PodsRowLabel}" />
+                                    <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind PauseOnDisconnect, Mode=TwoWay}"
+                                                  AutomationProperties.LabeledBy="{Binding ElementName=PauseLabel}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="PlayLabel" x:Uid="TilePlayOnConnect" Style="{StaticResource PodsRowLabel}" />
+                                    <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind PlayOnConnect, Mode=TwoWay}"
+                                                  AutomationProperties.LabeledBy="{Binding ElementName=PlayLabel}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8" Visibility="{x:Bind ShowAutoConnectSetting}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="AutoLabel" x:Uid="TileAutoConnect" Style="{StaticResource PodsRowLabel}" />
+                                    <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind AutoConnect, Mode=TwoWay}"
+                                                  AutomationProperties.LabeledBy="{Binding ElementName=AutoLabel}" />
+                                </Grid>
+                                <Grid ColumnSpacing="8" Visibility="{x:Bind ShowLidPopupSetting}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="LidLabel" x:Uid="TileLidPopup" Style="{StaticResource PodsRowLabel}" />
+                                    <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind LidPopup, Mode=TwoWay}"
+                                                  AutomationProperties.LabeledBy="{Binding ElementName=LidLabel}" />
+                                </Grid>
+                                <HyperlinkButton x:Uid="TileUseAppToggles" Padding="0" Command="{x:Bind UseAppTogglesCommand}"
+                                                 Visibility="{x:Bind HasOwnToggles, Mode=OneWay}" />
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
@@ -159,7 +185,9 @@
      </views:FlipPanel.Front>
 
      <views:FlipPanel.Back>
-    <StackPanel Background="{ThemeResource PodsPageBackground}" Padding="12" Spacing="10">
+    <!-- As tall as the devices page; scrolls when the settings need more. -->
+    <ScrollViewer Background="{ThemeResource PodsPageBackground}">
+    <StackPanel Padding="12" Spacing="10">
         <Grid ColumnSpacing="4" Margin="-6,0,4,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -177,20 +205,44 @@
                 <TextBlock Text="{x:Bind ViewModel.AppSettings.ThresholdText, Mode=OneWay}" FontSize="13" HorizontalAlignment="Right"
                            Foreground="{ThemeResource PodsPrimaryText}" />
             </Grid>
-            <StackPanel>
-                <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind ViewModel.AppSettings.Threshold, Mode=TwoWay}" />
-                <Grid Margin="0,2,0,0">
-                    <TextBlock Text="5%" FontSize="11" Foreground="{ThemeResource PodsSecondaryText}" />
-                    <TextBlock Text="50%" FontSize="11" HorizontalAlignment="Right" Foreground="{ThemeResource PodsSecondaryText}" />
-                </Grid>
-            </StackPanel>
-            <TextBlock x:Uid="AppLogLevel" FontSize="13" Margin="0,8,0,0" Foreground="{ThemeResource PodsSecondaryText}" />
-            <ComboBox HorizontalAlignment="Stretch" ItemsSource="{x:Bind ViewModel.AppSettings.LogLevels}"
-                      SelectedIndex="{x:Bind ViewModel.AppSettings.SelectedLogLevelIndex, Mode=TwoWay}" />
+            <Slider Style="{StaticResource PodsThresholdSlider}" Value="{x:Bind ViewModel.AppSettings.Threshold, Mode=TwoWay}" />
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppEarLabel" x:Uid="AppEarDetection" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.EarDetection, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppEarLabel}" />
+            </Grid>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppPauseLabel" x:Uid="AppPauseOnDisconnect" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.PauseOnDisconnect, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppPauseLabel}" />
+            </Grid>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppPlayLabel" x:Uid="AppPlayOnConnect" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.PlayOnConnect, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppPlayLabel}" />
+            </Grid>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppAutoLabel" x:Uid="AppAutoConnect" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.AutoConnect, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppAutoLabel}" />
+            </Grid>
+            <Grid ColumnSpacing="8" Margin="0,4,0,0">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppLogLevelLabel" x:Uid="AppLogLevel" FontSize="13" VerticalAlignment="Center"
+                           Foreground="{ThemeResource PodsSecondaryText}" />
+                <ComboBox Grid.Column="1" MinWidth="120" ItemsSource="{x:Bind ViewModel.AppSettings.LogLevels}"
+                          SelectedIndex="{x:Bind ViewModel.AppSettings.SelectedLogLevelIndex, Mode=TwoWay}"
+                          AutomationProperties.LabeledBy="{Binding ElementName=AppLogLevelLabel}" />
+            </Grid>
         </StackPanel>
         <TextBlock Text="{x:Bind ViewModel.AppSettings.Version}" FontSize="12" Margin="4,0,4,0"
                    Foreground="{ThemeResource PodsSecondaryText}" />
     </StackPanel>
+    </ScrollViewer>
      </views:FlipPanel.Back>
     </views:FlipPanel>
 </UserControl>

@@ -22,10 +22,17 @@
   <data name="ThresholdDefault" xml:space="preserve"><value>{0}% (app default)</value></data>
   <data name="TileUseDefault.Content" xml:space="preserve"><value>Use app default</value></data>
   <data name="PopupClose" xml:space="preserve"><value>Close</value></data>
-  <data name="TileLidPopup.Header" xml:space="preserve"><value>Show popup when case opens</value></data>
-  <data name="TileLidPopup.OnContent" xml:space="preserve"><value>On</value></data>
-  <data name="TileLidPopup.OffContent" xml:space="preserve"><value>Off</value></data>
-  <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery warning:</value></data>
+  <data name="TileLidPopup.Text" xml:space="preserve"><value>Popup on case open</value></data>
+  <data name="TileEarDetection.Text" xml:space="preserve"><value>Pause when out</value></data>
+  <data name="TilePauseOnDisconnect.Text" xml:space="preserve"><value>Pause on disconnect</value></data>
+  <data name="TilePlayOnConnect.Text" xml:space="preserve"><value>Play on connect</value></data>
+  <data name="TileAutoConnect.Text" xml:space="preserve"><value>Auto connect</value></data>
+  <data name="TileUseAppToggles.Content" xml:space="preserve"><value>Use app defaults</value></data>
+  <data name="AppEarDetection.Text" xml:space="preserve"><value>Pause when taken out</value></data>
+  <data name="AppPauseOnDisconnect.Text" xml:space="preserve"><value>Pause on disconnect</value></data>
+  <data name="AppPlayOnConnect.Text" xml:space="preserve"><value>Play on connect</value></data>
+  <data name="AppAutoConnect.Text" xml:space="preserve"><value>Auto connect</value></data>
+  <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileBack.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Back</value></data>

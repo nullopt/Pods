@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pods.App.Views;
@@ -31,6 +32,8 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         Key = snapshot.Key;
         ShowLidPopupSetting = LidPopupSetting.Supported(snapshot.ModelId);
         lidPopup = LidPopupSetting.IsOn(settings, Key, snapshot.ModelId);
+        ShowEarDetectionSetting = MediaSettings.SupportsEarDetection(snapshot.ModelId);
+        ShowAutoConnectSetting = MediaSettings.SupportsAutoConnect(snapshot.ModelId);
         Update(snapshot, adapterAvailable);
     }
 
@@ -114,6 +117,76 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         }
     }
 
+    /// <summary>The model reports in-ear state, so the tile offers "pause when taken out".</summary>
+    public bool ShowEarDetectionSetting { get; }
+
+    /// <summary>The model can ask to connect when its case opens, so the tile offers auto connect.</summary>
+    public bool ShowAutoConnectSetting { get; }
+
+    bool earDetection, pauseOnDisconnect, playOnConnect, autoConnect;
+
+    /// <summary>Pause media when an earbud comes out; resume when it goes back in.</summary>
+    public bool EarDetection
+    {
+        get => earDetection;
+        set => SetToggle(ref earDetection, value, () =>
+            settings.SetForDevice(SettingKeys.EarDetection, Key, value ? EarDetectionMode.PlayPause : EarDetectionMode.Off));
+    }
+
+    public bool PauseOnDisconnect
+    {
+        get => pauseOnDisconnect;
+        set => SetToggle(ref pauseOnDisconnect, value, () => settings.SetForDevice(SettingKeys.PauseOnDisconnect, Key, value));
+    }
+
+    public bool PlayOnConnect
+    {
+        get => playOnConnect;
+        set => SetToggle(ref playOnConnect, value, () => settings.SetForDevice(SettingKeys.PlayOnConnect, Key, value));
+    }
+
+    public bool AutoConnect
+    {
+        get => autoConnect;
+        set => SetToggle(ref autoConnect, value, () => settings.SetForDevice(SettingKeys.AutoConnect, Key, value));
+    }
+
+    /// <summary>Any of the four toggles has its own value, so they can go back to the app defaults.</summary>
+    [ObservableProperty] public partial bool HasOwnToggles { get; private set; }
+
+    /// <summary>A value set from the tile; the store drops it again where it equals the app default.</summary>
+    void SetToggle(ref bool field, bool value, Action write, [CallerMemberName] string? name = null)
+    {
+        if (!SetProperty(ref field, value, name)) return;
+        Save(write);
+        HasOwnToggles = MediaSettings.AnyToggleOverridden(settings, Key);
+    }
+
+    [RelayCommand]
+    void UseAppToggles()
+    {
+        Save(() => MediaSettings.ResetToggles(settings, Key));
+        SyncToggles();
+    }
+
+    /// <summary>Shows the stored values without writing them back; cheap enough for every update.</summary>
+    void SyncToggles()
+    {
+        var media = MediaSettings.For(settings, Key);
+        Show(ref earDetection, media.EarDetection, nameof(EarDetection));
+        Show(ref pauseOnDisconnect, media.PauseOnDisconnect, nameof(PauseOnDisconnect));
+        Show(ref playOnConnect, media.PlayOnConnect, nameof(PlayOnConnect));
+        Show(ref autoConnect, settings.GetForDevice(SettingKeys.AutoConnect, Key), nameof(AutoConnect));
+        HasOwnToggles = MediaSettings.AnyToggleOverridden(settings, Key);
+    }
+
+    void Show(ref bool field, bool value, string name)
+    {
+        if (field == value) return;
+        field = value;
+        OnPropertyChanged(name);
+    }
+
     [RelayCommand]
     void UseAppDefault()
     {
@@ -189,5 +262,6 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         var singleCharging = left is null ? rightCharging : leftCharging;
         Single.Update(single, singleCharging, threshold);
         SyncThreshold();
+        SyncToggles();
     }
 }
