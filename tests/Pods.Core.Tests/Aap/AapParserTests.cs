@@ -25,6 +25,14 @@ public class AapParserTests
         Assert.Equal(new PodBattery(91, 87, 40, false, false, true), msg.Battery);
     }
 
+    /// <summary>A capture from AirPods Pro 2 published by LibrePods ("AAP Definitions.md"), a second source for the format.</summary>
+    [Fact]
+    public void Battery_LibrePodsCapture()
+    {
+        var msg = Assert.IsType<AapBatteryMessage>(AapParser.Parse(Hex("04 00 04 00 04 00 03 02 01 64 02 01 04 01 63 01 01 08 01 11 02 01")));
+        Assert.Equal(new PodBattery(Left: 99, Right: 100, Case: 17, LeftCharging: true, RightCharging: false, CaseCharging: false), msg.Battery);
+    }
+
     [Fact]
     public void Battery_DisconnectedPartIsUnknown()
     {
