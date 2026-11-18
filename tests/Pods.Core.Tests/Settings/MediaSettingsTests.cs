@@ -73,7 +73,6 @@ public sealed class MediaSettingsTests : IDisposable
     [Theory]
     [InlineData("1420", true, true)]     // AirPods Pro 2
     [InlineData("0a20", true, false)]    // AirPods Max: ear detection, no auto-connect
-    [InlineData("1120", false, false)]   // Beats Studio Buds: lid popup only
     [InlineData("ffff", false, false)]   // not catalogued
     public void Supports(string modelId, bool ear, bool autoConnect)
     {

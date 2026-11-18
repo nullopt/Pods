@@ -3,7 +3,11 @@ namespace Pods.Core.Tests.Apple;
 
 public class ModelCatalogTests
 {
-    [Fact] public void Catalog_Has31Models() => Assert.Equal(31, ModelCatalog.All.Count);
+    [Fact] public void Catalog_Has14AirPodsModels()
+    {
+        Assert.Equal(14, ModelCatalog.All.Count);
+        Assert.All(ModelCatalog.All, m => Assert.StartsWith("AirPods", m.Name));
+    }
 
     [Fact]
     public void Find_ProTwoHasAllCapabilities()
@@ -17,13 +21,15 @@ public class ModelCatalogTests
     public void Find_MaxHasNoAutoConnect() =>
         Assert.Equal(AppleCapabilities.EarDetection | AppleCapabilities.LidPopup, ModelCatalog.Find("0a20")!.Capabilities);
 
-    [Fact]
-    public void Find_StudioBudsOnlyLidPopup() =>
-        Assert.Equal(AppleCapabilities.LidPopup, ModelCatalog.Find("1120")!.Capabilities);
+    [Theory]
+    [InlineData("0b20")]   // Powerbeats Pro
+    [InlineData("1120")]   // Beats Studio Buds
+    [InlineData("0620")]   // Beats Solo3
+    [InlineData("1020")]   // Beats Flex
+    public void Find_BeatsNotCatalogued(string modelId) => Assert.Null(ModelCatalog.Find(modelId));
 
     [Fact]
-    public void Find_BeatsFlexHasNoCapabilities() =>
-        Assert.Equal(AppleCapabilities.None, ModelCatalog.Find("1020")!.Capabilities);
+    public void SingleBattery_IsTheMaxFamily() => Assert.True(ModelCatalog.SingleBatteryIds.SetEquals(ModelCatalog.MaxFamilyIds));
 
     [Fact] public void Find_UnknownReturnsNull() => Assert.Null(ModelCatalog.Find("ffff"));
 }

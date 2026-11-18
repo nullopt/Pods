@@ -21,7 +21,7 @@ public class TurntableTests
     public void Parts_SplitSheet() => Assert.Equal(new TurntableParts(2, 96, 111, 218), Turntable.Parts("1420"));
 
     [Fact]
-    public void Parts_ColourSheetHasOwnEntry() => Assert.Equal(new TurntableParts(7, 92, 98, 215), Turntable.Parts("1120_66"));
+    public void Parts_BeatsSheetsGone() => Assert.Null(Turntable.Parts("1120_66"));
 
     [Fact]
     public void Parts_SingleObjectSheetHasNone()
@@ -33,7 +33,7 @@ public class TurntableTests
     [Fact]
     public void Parts_EarbudsLeftOfCase_NoOverlap()
     {
-        foreach (var sheet in new[] { "0b20", "0f20", "1120", "1320", "1420", "2720", "3620" })
+        foreach (var sheet in new[] { "0e20", "0f20", "1320", "1420", "1920", "1b20", "2420", "2720", "3020", "3620" })
         {
             var p = Turntable.Parts(sheet)!.Value;
             Assert.True(p.BudsStart < p.BudsEnd && p.BudsEnd <= p.CaseStart && p.CaseStart < p.CaseEnd, sheet);

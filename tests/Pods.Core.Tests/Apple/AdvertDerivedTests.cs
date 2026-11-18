@@ -48,10 +48,10 @@ public class AdvertDerivedTests
     [Fact]
     public void CapabilityGating()
     {
-        var studio = D(Frames.Make(0x11, 0x20, 0x05, 0x58, 0x13, cap: 0x05));
-        Assert.Null(studio.Playback);
-        Assert.Null(studio.SwitchAudioOut);
-        Assert.True(studio.LidPopup);
+        var lidOnly = D(Frames.Pro2(0x05, cap: 0x05)) with { Model = ModelCatalog.Find("1420")! with { Capabilities = AppleCapabilities.LidPopup } };
+        Assert.Null(lidOnly.Playback);
+        Assert.Null(lidOnly.SwitchAudioOut);
+        Assert.True(lidOnly.LidPopup);
         var unknown = D(Frames.Make(0xff, 0xff, 0x05, 0x58, 0x13, cap: 0x05));
         Assert.Null(unknown.LidPopup);
     }
@@ -66,8 +66,8 @@ public class AdvertDerivedTests
     [Fact]
     public void BothInCase_NeverForCaselessModel()
     {
-        // Beats Solo3 with the status bits that mean "both pods in case" on earbuds.
-        var advert = AdvertDecoder.Decode(Frames.Make(0x06, 0x20, 0x15, 0x58, 0x13), -50, 1)!;
+        // AirPods Max with the status bits that mean "both pods in case" on earbuds.
+        var advert = AdvertDecoder.Decode(Frames.Make(0x0a, 0x20, 0x15, 0x58, 0x13), -50, 1)!;
         Assert.False(advert.BothInCase);
     }
 }

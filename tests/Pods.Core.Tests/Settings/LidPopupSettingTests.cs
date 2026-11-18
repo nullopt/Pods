@@ -33,9 +33,8 @@ public sealed class LidPopupSettingTests : IDisposable
 
     [Theory]
     [InlineData("1420", true)]
-    [InlineData("1120", true)]    // Beats Studio Buds: lid popup only
     [InlineData("0a20", true)]    // AirPods Max: supported, off by default
-    [InlineData("0320", false)]   // Powerbeats3: no lid popup
+    [InlineData("1120", false)]   // Beats Studio Buds: not catalogued
     [InlineData("ffff", false)]   // not catalogued
     public void Supported(string modelId, bool expected) => Assert.Equal(expected, LidPopupSetting.Supported(modelId));
 }

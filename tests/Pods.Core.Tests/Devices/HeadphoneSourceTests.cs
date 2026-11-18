@@ -435,9 +435,9 @@ public sealed class HeadphoneSourceTests : IDisposable
     }
 
     [Theory]
-    [InlineData("0620")]   // Beats Solo3: over-ear, no case
-    [InlineData("1020")]   // Beats Flex: neckband, no case
     [InlineData("0a20")]   // AirPods Max
+    [InlineData("1f20")]   // AirPods Max (USB-C)
+    [InlineData("2d20")]   // AirPods Max 2
     public void CaselessModel_IsSingleBattery(string modelId)
     {
         StartWith(new PairedDevice("112233445566", "Headphones", modelId, false));
