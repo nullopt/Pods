@@ -68,7 +68,7 @@
   <data name="RequestConnectFailed" xml:space="preserve"><value>Couldn't connect</value></data>
   <data name="RequestDisconnectFailed" xml:space="preserve"><value>Couldn't disconnect</value></data>
   <data name="StateMultipleConnection" xml:space="preserve"><value>Connected to several devices</value></data>
-  <data name="TrayNoHeadphones" xml:space="preserve"><value>No headphones connected</value></data>
+  <data name="TrayNoHeadphones.Text" xml:space="preserve"><value>Connect a device to get started</value></data>
   <data name="TrayPartBuds" xml:space="preserve"><value>{0} buds</value></data>
   <data name="TrayPartLeft" xml:space="preserve"><value>{0} L</value></data>
   <data name="TrayPartRight" xml:space="preserve"><value>{0} R</value></data>
