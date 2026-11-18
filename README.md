@@ -2,6 +2,8 @@
 
 # Pods
 
+[![test](https://github.com/nullopt/Pods/actions/workflows/test.yml/badge.svg)](https://github.com/nullopt/Pods/actions/workflows/test.yml)
+
 AirPods companion for Windows: battery, ear detection and quick connect for Apple AirPods
 and Apple-chip Beats, as a lightweight tray app. No drivers, no admin rights.
 

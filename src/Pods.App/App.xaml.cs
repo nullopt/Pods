@@ -58,6 +58,8 @@ public partial class App : Application
         Settings = SettingsStore.Load(DataFolder);
         LogSetup.Configure(DataFolder, Settings.Get(SettingKeys.LogLevel));
         foreach (var warning in Settings.Warnings) Log.Warning("Settings: {Warning}", warning);
+        // Device files are read on first use, so their warnings come later.
+        Settings.WarningAdded += warning => Log.Warning("Settings: {Warning}", warning);
         Log.Information("Pods {Version} started", typeof(App).Assembly.GetName().Version);
         UnhandledException += (_, e) => Log.Fatal(e.Exception, "Unhandled UI exception");
         AppDomain.CurrentDomain.UnhandledException += (_, e) => Log.Fatal(e.ExceptionObject as Exception, "Unhandled exception");

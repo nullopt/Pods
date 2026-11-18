@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text.RegularExpressions;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Serilog;
@@ -16,10 +15,11 @@ namespace Pods.App.Devices;
 /// <see cref="BluetoothDevice"/> is held so its connection events keep arriving. After
 /// <see cref="Start"/>, <see cref="Current"/> keeps the previous list until the new enumeration has
 /// finished, so a restart after resume does not flash the cards away. A newly paired device's
-/// hardware ID appears only after Windows has installed its drivers, so a pairing that did not
-/// qualify yet is read again on each later update.
+/// hardware ID appears only after Windows has installed its drivers, so a pairing without a vendor
+/// ID yet is read again on each later update; one that can never qualify (another adapter, vendor
+/// or model) is not read again until the watcher restarts.
 /// </summary>
-internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, IDisposable
+internal sealed class WindowsPairedDeviceSource : IPairedDeviceSource, IDisposable
 {
     const string ContainerIdKey = "System.Devices.Aep.ContainerId";
     const string HardwareIdsKey = "System.Devices.HardwareIds";
@@ -27,6 +27,7 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
     readonly Lock gate = new();
     readonly List<Entry> entries = [];
     readonly HashSet<string> reading = [];
+    readonly HashSet<string> rejected = [];   // pairings that can never qualify on this adapter: not read again
     List<PairedDevice> current = [];
     bool adapterAvailable;
     string? adapterAddress;
@@ -141,6 +142,7 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
             foreach (var entry in entries) entry.Device.Dispose();
             entries.Clear();
             reading.Clear();
+            rejected.Clear();
             enumerated = false;
             pendingAdds = 0;
         }
@@ -156,12 +158,16 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
         watcher.Start();
     }
 
-    /// <summary>Reads a pairing again that was skipped before, e.g. because its drivers were still installing.</summary>
+    /// <summary>
+    /// Reads a pairing again that was skipped before, e.g. because its drivers were still installing.
+    /// Every paired device's updates arrive here, so ones known never to qualify return at once.
+    /// </summary>
     async Task RetryAsync(DeviceWatcher sender, string aepId)
     {
         lock (gate)
         {
-            if (sender != pairedWatcher || entries.Any(e => e.AepId == aepId) || reading.Contains(aepId)) return;
+            if (sender != pairedWatcher || entries.Any(e => e.AepId == aepId) || reading.Contains(aepId)
+                || rejected.Contains(aepId)) return;
         }
         try
         {
@@ -183,7 +189,12 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
         }
         try
         {
-            if (await ReadAsync(info) is { } entry)
+            var (entry, never) = await ReadAsync(info);
+            if (never)
+            {
+                lock (gate) if (sender == pairedWatcher) rejected.Add(info.Id);
+            }
+            else if (entry is not null)
             {
                 lock (gate)
                 {
@@ -213,40 +224,27 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
         }
     }
 
-    /// <summary>The entry for a qualifying pairing on the current adapter, else null.</summary>
-    async Task<Entry?> ReadAsync(DeviceInformation info)
+    /// <summary>
+    /// The entry for a qualifying pairing on the current adapter, else null; <c>Never</c> when it can
+    /// never qualify on this adapter (paired on another adapter, or another vendor or model).
+    /// </summary>
+    async Task<(Entry? Entry, bool Never)> ReadAsync(DeviceInformation info)
     {
         string? address;
         lock (gate) address = adapterAddress;
-        if (address is null || !info.Id.StartsWith($"Bluetooth#Bluetooth{address}-", StringComparison.OrdinalIgnoreCase)) return null;
-        if (info.Properties.GetValueOrDefault(ContainerIdKey) is not Guid container) return null;
+        if (address is null) return (null, false);
+        if (!info.Id.StartsWith($"Bluetooth#Bluetooth{address}-", StringComparison.OrdinalIgnoreCase)) return (null, true);
+        if (info.Properties.GetValueOrDefault(ContainerIdKey) is not Guid container) return (null, false);
 
-        var modelId = await AppleModelIdAsync(container);
-        if (modelId is null) return null;
-
-        var device = await BluetoothDevice.FromIdAsync(info.Id);
-        if (device is null) return null;
-        return new Entry(info.Id, device.BluetoothAddress.ToString("x12", CultureInfo.InvariantCulture), modelId, container, device);
-    }
-
-    /// <summary>The catalogued advert model ID from an Apple (VID 004C) hardware ID in the container, else null.</summary>
-    static async Task<string?> AppleModelIdAsync(Guid container)
-    {
         var nodes = await DeviceInformation.FindAllAsync(
             $"System.Devices.ContainerId:=\"{{{container}}}\"", [HardwareIdsKey], DeviceInformationKind.Device);
-        foreach (var node in nodes)
-        {
-            if (node.Properties.GetValueOrDefault(HardwareIdsKey) is not string[] ids) continue;
-            foreach (var id in ids)
-            {
-                var match = AppleHardwareId().Match(id);
-                if (!match.Success) continue;
-                var pid = match.Groups[1].Value.ToLowerInvariant();
-                var modelId = pid[2..] + pid[..2];
-                if (ModelCatalog.Find(modelId) is not null) return modelId;
-            }
-        }
-        return null;
+        var hardwareIds = nodes.SelectMany(n => n.Properties.GetValueOrDefault(HardwareIdsKey) as string[] ?? []);
+        var modelId = HardwareIds.AppleModelId(hardwareIds, out var decided);
+        if (modelId is null) return (null, decided);
+
+        var device = await BluetoothDevice.FromIdAsync(info.Id);
+        if (device is null) return (null, false);
+        return (new Entry(info.Id, device.BluetoothAddress.ToString("x12", CultureInfo.InvariantCulture), modelId, container, device), false);
     }
 
     void Remove(DeviceWatcher sender, string aepId)
@@ -281,9 +279,6 @@ internal sealed partial class WindowsPairedDeviceSource : IPairedDeviceSource, I
 
     static string FormatAddress(ulong address) =>
         string.Join(":", Enumerable.Range(0, 6).Select(i => ((address >> (8 * (5 - i))) & 0xFF).ToString("x2", CultureInfo.InvariantCulture)));
-
-    [GeneratedRegex(@"VID&0001004c_PID&([0-9a-f]{4})", RegexOptions.IgnoreCase)]
-    private static partial Regex AppleHardwareId();
 
     sealed record Entry(string AepId, string Id, string ModelId, Guid Container, BluetoothDevice Device);
 }

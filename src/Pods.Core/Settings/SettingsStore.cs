@@ -38,6 +38,19 @@ public sealed partial class SettingsStore
 
     public IReadOnlyList<string> Warnings { get { lock (gate) return [.. warnings]; } }
 
+    /// <summary>
+    /// Raised for each warning after <see cref="Load"/>, e.g. when a device file read on first use is
+    /// invalid. Raised while the store is locked: the handler must not call back into the store.
+    /// </summary>
+    public event Action<string>? WarningAdded;
+
+    /// <summary>Caller holds <see cref="gate"/> (or is the constructor).</summary>
+    void Warn(string message)
+    {
+        warnings.Add(message);
+        WarningAdded?.Invoke(message);
+    }
+
     public T Get<T>(Setting<T> setting)
     {
         lock (gate) return GlobalValue(setting);
@@ -141,7 +154,7 @@ public sealed partial class SettingsStore
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             // Locked or inaccessible: use defaults in memory and never write over the file.
-            warnings.Add($"{name} could not be read ({e.Message}); defaults used and changes will not be saved.");
+            Warn($"{name} could not be read ({e.Message}); defaults used and changes will not be saved.");
             return new SettingsFile(path, valuesKey, [], ReadOnly: true);
         }
 
@@ -154,16 +167,16 @@ public sealed partial class SettingsStore
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                warnings.Add($"{name} is invalid ({problem}) and could not be moved aside; defaults used and changes will not be saved.");
+                Warn($"{name} is invalid ({problem}) and could not be moved aside; defaults used and changes will not be saved.");
                 return new SettingsFile(path, valuesKey, [], ReadOnly: true);
             }
-            warnings.Add($"{name} was invalid ({problem}); moved to .bad and defaults used.");
+            Warn($"{name} was invalid ({problem}); moved to .bad and defaults used.");
             return new SettingsFile(path, valuesKey, [], ReadOnly: false);
         }
 
         if (version > CurrentVersion)
         {
-            warnings.Add($"{Path.GetFileName(path)} is from a newer version ({version}); it will not be changed.");
+            Warn($"{Path.GetFileName(path)} is from a newer version ({version}); it will not be changed.");
             return new SettingsFile(path, valuesKey, Values(doc, valuesKey), ReadOnly: true);
         }
         for (var i = version; i < CurrentVersion; i++) doc = Migrations[i](doc);

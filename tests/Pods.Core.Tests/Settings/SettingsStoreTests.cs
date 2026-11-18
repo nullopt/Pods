@@ -167,6 +167,21 @@ public sealed class SettingsStoreTests : IDisposable
         Assert.NotEmpty(s.Warnings);
     }
 
+    /// <summary>Device files are read on first use, after startup has logged <see cref="SettingsStore.Warnings"/>.</summary>
+    [Fact]
+    public void CorruptDeviceFile_ReadLater_RaisesWarningAdded()
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(DeviceFile)!);
+        File.WriteAllText(DeviceFile, "[1,");
+        var s = SettingsStore.Load(dir);
+        List<string> raised = [];
+        s.WarningAdded += raised.Add;
+        s.GetForDevice(SettingKeys.AutoConnect, Dev);
+        var warning = Assert.Single(raised);
+        Assert.Contains(Dev + ".json", warning);
+        Assert.Equal(s.Warnings[^1], warning);
+    }
+
     [Fact]
     public void WrongValueType_FallsBackToDefault()
     {
