@@ -2,6 +2,7 @@ using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Pods.App.Views;
+using Pods.Core.Aap;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Settings;
@@ -34,8 +35,37 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         lidPopup = LidPopupSetting.IsOn(settings, Key, snapshot.ModelId);
         ShowEarDetectionSetting = MediaSettings.SupportsEarDetection(snapshot.ModelId);
         ShowAutoConnectSetting = MediaSettings.SupportsAutoConnect(snapshot.ModelId);
+        NoiseModes = ModelCatalog.Find(snapshot.ModelId) is { } model
+            ? [.. MenuOrder.Where(m => AapSession.Supports(model, m))]
+            : [];
         Update(snapshot, adapterAvailable);
     }
+
+    /// <summary>As on iPhone.</summary>
+    static readonly NoiseControlMode[] MenuOrder =
+        [NoiseControlMode.NoiseCancellation, NoiseControlMode.Adaptive, NoiseControlMode.Transparency, NoiseControlMode.Off];
+
+    /// <summary>The noise control modes this model offers, in menu order.</summary>
+    public IReadOnlyList<NoiseControlMode> NoiseModes { get; }
+
+    /// <summary>
+    /// In place of the state line: the noise control menu, while the headset is connected over AAP and
+    /// no request is pending.
+    /// </summary>
+    [ObservableProperty, NotifyPropertyChangedFor(nameof(ShowStateText))]
+    public partial bool ShowNoiseControl { get; private set; }
+
+    public bool ShowStateText => !ShowNoiseControl;
+
+    /// <summary>The mode the headset last reported; null until it does.</summary>
+    public NoiseControlMode? NoiseControl { get; private set; }
+
+    /// <summary>The menu's label: the current mode, or "Noise control" until it is known.</summary>
+    [ObservableProperty] public partial string NoiseControlText { get; private set; } = "";
+
+    public static string NoiseModeText(NoiseControlMode mode) => Strings.Get("Noise" + mode);
+
+    public void SetNoiseControl(NoiseControlMode mode) => source.SetNoiseControl(Key, mode);
 
     public string Key { get; }
 
@@ -245,6 +275,9 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         ShowConnect = !connected;
         ShowDisconnect = connected;
         CanAct = adapterAvailable && !pending;
+        ShowNoiseControl = connected && snapshot.CanControlNoise && snapshot.Request == ConnectionRequest.None && NoiseModes.Count > 0;
+        NoiseControl = snapshot.NoiseControl;
+        NoiseControlText = snapshot.NoiseControl is { } mode ? NoiseModeText(mode) : Strings.Get("NoiseUnknown");
 
         Sheet = Turntable.Resolve(snapshot.ModelId, snapshot.Colour, TurntableView.Available);
         IsSplit = Sheet is not null && Turntable.Parts(Sheet) is not null;

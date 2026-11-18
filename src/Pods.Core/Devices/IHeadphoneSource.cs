@@ -1,3 +1,5 @@
+using Pods.Core.Aap;
+
 namespace Pods.Core.Devices;
 
 /// <summary>The devices the UI shows.</summary>
@@ -25,4 +27,7 @@ public interface IHeadphoneSource
     void Stop();
     void Connect(string key);
     void Disconnect(string key);
+
+    /// <summary>Switches the device's noise control; does nothing unless its snapshot says <see cref="HeadphoneSnapshot.CanControlNoise"/>.</summary>
+    void SetNoiseControl(string key, NoiseControlMode mode);
 }

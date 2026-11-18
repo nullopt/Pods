@@ -7,7 +7,7 @@ namespace Pods.Core.Tests.Devices;
 
 public sealed class HeadphoneSourceTests : IDisposable
 {
-    sealed class FakeAdvertSource : IAppleAdvertSource
+    internal sealed class FakeAdvertSource : IAppleAdvertSource
     {
         public event Action<AppleAdvert>? AdvertReceived;
         public bool Running { get; private set; }
@@ -17,7 +17,7 @@ public sealed class HeadphoneSourceTests : IDisposable
         public void Raise(AppleAdvert advert) => AdvertReceived?.Invoke(advert);
     }
 
-    sealed class FakePairedSource : IPairedDeviceSource
+    internal sealed class FakePairedSource : IPairedDeviceSource
     {
         public IReadOnlyList<PairedDevice> Current { get; set; } = [];
         public bool IsAdapterAvailable { get; set; } = true;

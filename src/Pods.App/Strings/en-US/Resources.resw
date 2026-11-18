@@ -56,6 +56,13 @@
   <data name="FlyoutBack.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Back</value></data>
   <data name="CardConnect.Content" xml:space="preserve"><value>Connect</value></data>
   <data name="CardDisconnect.Content" xml:space="preserve"><value>Disconnect</value></data>
+  <data name="CardNoiseControl.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Noise control</value></data>
+  <data name="CardNoiseControl.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.HelpText" xml:space="preserve"><value>Noise control</value></data>
+  <data name="NoiseNoiseCancellation" xml:space="preserve"><value>Noise Cancellation</value></data>
+  <data name="NoiseAdaptive" xml:space="preserve"><value>Adaptive</value></data>
+  <data name="NoiseTransparency" xml:space="preserve"><value>Transparency</value></data>
+  <data name="NoiseOff" xml:space="preserve"><value>Off</value></data>
+  <data name="NoiseUnknown" xml:space="preserve"><value>Noise control</value></data>
   <data name="RequestConnecting" xml:space="preserve"><value>Connecting…</value></data>
   <data name="RequestDisconnecting" xml:space="preserve"><value>Disconnecting…</value></data>
   <data name="RequestConnectFailed" xml:space="preserve"><value>Couldn't connect</value></data>

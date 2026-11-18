@@ -65,7 +65,18 @@
                        TextAlignment="Center" TextTrimming="CharacterEllipsis"
                        Foreground="{ThemeResource PodsPrimaryText}" />
             <TextBlock Text="{x:Bind Card.StateText, Mode=OneWay}" FontSize="12" TextAlignment="Center"
-                       Foreground="{ThemeResource PodsSecondaryText}" />
+                       Foreground="{ThemeResource PodsSecondaryText}"
+                       Visibility="{x:Bind Card.ShowStateText, Mode=OneWay}" />
+            <!-- Over AAP the state line becomes the noise control menu; its items are built when it opens. -->
+            <DropDownButton x:Uid="CardNoiseControl" HorizontalAlignment="Center" FontSize="12" Padding="6,0,4,1" MinHeight="0"
+                            Background="Transparent" BorderThickness="0"
+                            Foreground="{ThemeResource PodsSecondaryText}"
+                            Content="{x:Bind Card.NoiseControlText, Mode=OneWay}"
+                            Visibility="{x:Bind Card.ShowNoiseControl, Mode=OneWay}">
+                <DropDownButton.Flyout>
+                    <MenuFlyout Placement="Bottom" Opening="OnNoiseMenuOpening" />
+                </DropDownButton.Flyout>
+            </DropDownButton>
         </StackPanel>
 
         <!-- Earbuds and case side by side, each over its rings. -->

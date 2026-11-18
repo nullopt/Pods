@@ -20,4 +20,22 @@ internal sealed partial class DeviceTile : UserControl
 
     /// <summary>The button in the top right corner.</summary>
     public object? Corner { get => GetValue(CornerProperty); set => SetValue(CornerProperty, value); }
+
+    /// <summary>One radio item per mode the model offers, the current one checked.</summary>
+    void OnNoiseMenuOpening(object sender, object e)
+    {
+        if (sender is not MenuFlyout menu || Card is not { } card) return;
+        menu.Items.Clear();
+        foreach (var mode in card.NoiseModes)
+        {
+            var item = new RadioMenuFlyoutItem
+            {
+                Text = DeviceCardViewModel.NoiseModeText(mode),
+                GroupName = "NoiseControl",
+                IsChecked = card.NoiseControl == mode,
+            };
+            item.Click += (_, _) => card.SetNoiseControl(mode);
+            menu.Items.Add(item);
+        }
+    }
 }

@@ -1,0 +1,79 @@
+;/*++
+;
+;Copyright (c) 1990-2000  Microsoft Corporation
+;
+;   THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY
+;   KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+;   IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A PARTICULAR
+;   PURPOSE.
+;
+;Module Name:
+;    PodsAap.inx
+;
+;Abstract:
+;    INF file for installing the Pods AAP channel driver, based on the
+;    Bluetooth Echo Sample Client. It binds to the node Windows creates for a
+;    paired device whose SDP record lists Apple's AAP service UUID
+;    (AirPods and Apple-chip Beats).
+;
+;--*/
+
+[Version]
+Signature="$WINDOWS NT$"
+Class=Bluetooth
+ClassGuid={e0cbf06c-cd8b-4647-bb8a-263b43f0f974}
+Provider=%ProviderString%
+DriverVer=11/18/2026,1.0.0.0
+CatalogFile=podsaap.cat
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir = 13
+
+[SourceDisksNames]
+1 = %DiskId1%,,,""
+
+[SourceDisksFiles]
+PodsAap.sys  = 1,,
+
+;*****************************************
+; PodsAap  Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerString%=Pods,NT$ARCH$.10.0.1..16299
+
+[Pods.NT$ARCH$.10.0.1..16299]
+%PodsAap.DeviceDesc% = PodsAap_Inst,BTHENUM\{74ec2172-0bad-4d01-8f77-997b2be0722a}
+
+[PodsAap_Inst.NT]
+CopyFiles=DriverStore_Dir
+
+[DriverStore_Dir]
+PodsAap.sys
+
+;-------------- Service installation
+[PodsAap_Inst.NT.Services]
+AddService = PodsAap,%SPSVCINST_ASSOCSERVICE%, PodsAap_Service_Inst
+
+; -------------- PodsAap driver install sections
+[PodsAap_Service_Inst]
+DisplayName    = %PodsAap.SVCDESC%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %13%\PodsAap.sys
+
+[PodsAap_Inst.NT.Wdf]
+KmdfService =  PodsAap, PodsAap_Inst_wdfsect
+
+[PodsAap_Inst_wdfsect]
+KmdfLibraryVersion = $KMDFVERSION$
+
+[Strings]
+SPSVCINST_ASSOCSERVICE= 0x00000002
+ProviderString = "Pods"
+ManufacturerString = "Pods"
+DiskId1 = "Pods AAP driver installation disk"
+PodsAap.DeviceDesc = "Pods AAP channel"
+PodsAap.SVCDESC = "Pods AAP channel driver"
