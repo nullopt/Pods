@@ -12,10 +12,12 @@ using Microsoft.Windows.AppNotifications.Builder;
 using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
 using Pods.App.Logging;
+using Pods.App.Media;
 using Pods.App.Tray;
 using Pods.App.Views;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
+using Pods.Core.Media;
 using Pods.Core.Settings;
 using Serilog;
 
@@ -26,6 +28,7 @@ public partial class App : Application
     TaskbarIcon? tray;
     TrayHover? trayHover;
     readonly LowBatteryMonitor lowBattery = new();
+    MediaAutomation media = null!;
     readonly TrayCardViewModel trayCard = new();
     bool trayLow;
     bool notificationsRegistered;
@@ -69,6 +72,7 @@ public partial class App : Application
         Headphones.Changed += OnHeadphonesChangedAnyThread;
         Headphones.LidOpened += OnLidOpenedAnyThread;
         Headphones.LidClosed += OnLidClosedAnyThread;
+        media = CreateMediaAutomation();
         Headphones.Start();
         PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
         DispatcherShutdownMode = DispatcherShutdownMode.OnExplicitShutdown;
@@ -175,6 +179,7 @@ public partial class App : Application
 #if DEBUG
         menu.Items.Add(MenuItem("TrayDemoDevices", ShowDemoDevices));
         menu.Items.Add(MenuItem("TrayDemoLidPopup", () => (Headphones as FakeHeadphoneSource)?.RaiseLidOpened()));
+        menu.Items.Add(MenuItem("TrayDemoEar", () => (Headphones as FakeHeadphoneSource)?.ToggleEar()));
 #endif
         menu.Items.Add(MenuItem("TrayRestart", Restart));
         menu.Items.Add(new MenuFlyoutSeparator());
@@ -221,6 +226,7 @@ public partial class App : Application
             if (tray is not null) tray.IconSource = TrayIcon(trayLow);
         }
         trayCard.Update(connected, ThresholdFor);
+        media.Update(Headphones.Current, key => MediaSettings.For(Settings, key));
         TurntableView.Keep(connected.Select(s => Turntable.Resolve(s.ModelId, s.Colour, TurntableView.Available)));
         if (lidPopup is not null)
         {
@@ -300,6 +306,14 @@ public partial class App : Application
         }
     }
 
+    static MediaAutomation CreateMediaAutomation()
+    {
+        var automation = new MediaAutomation(new SmtcMediaControl());
+        automation.Acted += (key, action) => Log.Information("Media: {Action} for {Device}", action, key);
+        automation.Failed += ex => Log.Warning(ex, "Media action failed");
+        return automation;
+    }
+
     int ThresholdFor(string key) => Settings.GetForDevice(SettingKeys.LowBatteryPercent, key);
 
     static MenuFlyoutItem MenuItem(string key, Action action) =>
@@ -331,6 +345,8 @@ public partial class App : Application
         Headphones.Stop();
         lidPopup?.Close();
         Headphones = new FakeHeadphoneSource(ui!);
+        // The old source's headsets are gone, not disconnected: start afresh instead of pausing.
+        media = CreateMediaAutomation();
         Headphones.Changed += OnHeadphonesChangedAnyThread;
         Headphones.LidOpened += OnLidOpenedAnyThread;
         Headphones.LidClosed += OnLidClosedAnyThread;

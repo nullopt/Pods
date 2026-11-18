@@ -14,7 +14,7 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
     readonly List<HeadphoneSnapshot> devices =
     [
         new("de0000000001", "AirPods Pro 2", "1420", "00", DeviceState.Connected,
-            new PodBattery(95, 85, 45, false, true, false), Playback.NoneIn, IsSingleBattery: false, IsInCase: true),
+            new PodBattery(95, 85, 45, false, true, false), Playback.AllIn, IsSingleBattery: false),
         new("de0000000002", "AirPods Max", "0a20", "0f", DeviceState.Disconnected,
             new PodBattery(60, null, null, false, false, false), Playback.NoneIn, IsSingleBattery: true),
     ];
@@ -33,6 +33,13 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
 
     /// <summary>Pretends the first demo device's case lid opened.</summary>
     internal void RaiseLidOpened() => LidOpened?.Invoke(devices[0].Key);
+
+    /// <summary>Pretends an earbud of the first demo device came out, or went back in.</summary>
+    internal void ToggleEar()
+    {
+        devices[0] = devices[0] with { Playback = devices[0].Playback == Playback.AllIn ? Playback.Partial : Playback.AllIn };
+        Changed?.Invoke();
+    }
 
     public void Start()
     {

@@ -11,6 +11,7 @@
   <data name="TrayExit" xml:space="preserve"><value>Exit</value></data>
   <data name="TrayDemoDevices" xml:space="preserve"><value>Demo devices</value></data>
   <data name="TrayDemoLidPopup" xml:space="preserve"><value>Demo lid popup</value></data>
+  <data name="TrayDemoEar" xml:space="preserve"><value>Demo ear out / in</value></data>
   <data name="DevicesTitle.Text" xml:space="preserve"><value>Pods</value></data>
   <data name="DevicesEmpty.Text" xml:space="preserve"><value>No AirPods are paired with this PC. Pair them in Windows Bluetooth settings and they will appear here.</value></data>
   <data name="StateDisconnected" xml:space="preserve"><value>Not connected to this PC</value></data>
