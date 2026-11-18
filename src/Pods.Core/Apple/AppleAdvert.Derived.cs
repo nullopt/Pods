@@ -32,10 +32,6 @@ public sealed partial record AppleAdvert
     /// <summary>Both pods are in the case (status bit 2; bit 4 alone means one pod). Never for headphones without a case.</summary>
     public bool BothInCase => !ModelCatalog.SingleBatteryIds.Contains(ModelId) && BothPresent && Bit(2);
 
-    /// <summary>Null unless the model supports auto-connect.</summary>
-    public bool? AutoConnect => !Has(AppleCapabilities.AutoConnect) ? null
-        : Bit(6) && !Bit(2) && BothPresent && !LeftInEar && !RightInEar;
-
     /// <summary>Equality used for change detection and address matching; ignores address and RSSI.</summary>
     public bool SameState(AppleAdvert other) =>
         ModelId == other.ModelId && Colour == other.Colour && LidCounter == other.LidCounter && Battery == other.Battery;

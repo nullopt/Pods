@@ -45,22 +45,12 @@ public class AdvertDerivedTests
     public void LidPopup_Max(int cap, bool expected) =>
         Assert.Equal(expected, D(Frames.Make(0x0a, 0x20, 0x24, 0x58, 0x13, (byte)cap)).LidPopup);
 
-    [Theory]
-    [InlineData(0x41, true)]
-    [InlineData(0x45, false)] // in-case flag set
-    [InlineData(0x43, false)] // a pod in ear
-    public void AutoConnect_Rule(int status, bool expected) =>
-        Assert.Equal(expected, D(Frames.Pro2((byte)status)).AutoConnect);
-
     [Fact]
     public void CapabilityGating()
     {
-        var max = D(Frames.Make(0x0a, 0x20, 0x24, 0x58, 0x13));
-        Assert.Null(max.AutoConnect);
         var studio = D(Frames.Make(0x11, 0x20, 0x05, 0x58, 0x13, cap: 0x05));
         Assert.Null(studio.Playback);
         Assert.Null(studio.SwitchAudioOut);
-        Assert.Null(studio.AutoConnect);
         Assert.True(studio.LidPopup);
         var unknown = D(Frames.Make(0xff, 0xff, 0x05, 0x58, 0x13, cap: 0x05));
         Assert.Null(unknown.LidPopup);

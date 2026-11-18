@@ -69,9 +69,7 @@ public partial class App : Application
         RegisterNotifications();
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
-        Headphones.Changed += OnHeadphonesChangedAnyThread;
-        Headphones.LidOpened += OnLidOpenedAnyThread;
-        Headphones.LidClosed += OnLidClosedAnyThread;
+        AttachHeadphones();
         media = CreateMediaAutomation();
         Headphones.Start();
         PowerManager.SystemSuspendStatusChanged += OnSuspendStatusChanged;
@@ -213,7 +211,33 @@ public partial class App : Application
 
     static BitmapImage TrayIcon(bool low) => new(new Uri(low ? "ms-appx:///Assets/TrayLow.ico" : "ms-appx:///Assets/Tray.ico"));
 
+    void AttachHeadphones()
+    {
+        Headphones.Changed += OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened += OnLidOpenedAnyThread;
+        Headphones.LidClosed += OnLidClosedAnyThread;
+        Headphones.AutoConnectReady += OnAutoConnectReadyAnyThread;
+    }
+
+    void DetachHeadphones()
+    {
+        Headphones.Changed -= OnHeadphonesChangedAnyThread;
+        Headphones.LidOpened -= OnLidOpenedAnyThread;
+        Headphones.LidClosed -= OnLidClosedAnyThread;
+        Headphones.AutoConnectReady -= OnAutoConnectReadyAnyThread;
+    }
+
     void OnHeadphonesChangedAnyThread() => ui?.TryEnqueue(OnHeadphonesChanged);
+
+    void OnAutoConnectReadyAnyThread(string key) => ui?.TryEnqueue(() => OnAutoConnectReady(key));
+
+    /// <summary>A disconnected headset's pods were taken out of a case opened nearby: connect it, if its auto connect is on.</summary>
+    void OnAutoConnectReady(string key)
+    {
+        if (!Settings.GetForDevice(SettingKeys.AutoConnect, key)) return;
+        Log.Information("Auto connecting {Name}", Headphones.Current.FirstOrDefault(s => s.Key == key)?.Name ?? key);
+        Headphones.Connect(key);
+    }
 
     /// <summary>Battery or connection changed: refresh the tray card and the low dot.</summary>
     void OnHeadphonesChanged()
@@ -339,17 +363,13 @@ public partial class App : Application
     void ShowDemoDevices()
     {
         if (Headphones is FakeHeadphoneSource) return;
-        Headphones.Changed -= OnHeadphonesChangedAnyThread;
-        Headphones.LidOpened -= OnLidOpenedAnyThread;
-        Headphones.LidClosed -= OnLidClosedAnyThread;
+        DetachHeadphones();
         Headphones.Stop();
         lidPopup?.Close();
         Headphones = new FakeHeadphoneSource(ui!);
         // The old source's headsets are gone, not disconnected: start afresh instead of pausing.
         media = CreateMediaAutomation();
-        Headphones.Changed += OnHeadphonesChangedAnyThread;
-        Headphones.LidOpened += OnLidOpenedAnyThread;
-        Headphones.LidClosed += OnLidClosedAnyThread;
+        AttachHeadphones();
         Headphones.Start();
         OnHeadphonesChanged();
         // An open flyout still shows the old source's devices.
@@ -362,9 +382,7 @@ public partial class App : Application
     void ExitApp()
     {
         PowerManager.SystemSuspendStatusChanged -= OnSuspendStatusChanged;
-        Headphones.Changed -= OnHeadphonesChangedAnyThread;
-        Headphones.LidOpened -= OnLidOpenedAnyThread;
-        Headphones.LidClosed -= OnLidClosedAnyThread;
+        DetachHeadphones();
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();
         DisposeTray();

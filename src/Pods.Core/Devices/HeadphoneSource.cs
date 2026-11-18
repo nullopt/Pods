@@ -11,7 +11,8 @@ namespace Pods.Core.Devices;
 /// device is paired, so nothing runs while idle. While the adapter is off, cards keep their last
 /// values and removals are ignored until it returns. A connect or disconnect request is pending
 /// until Windows reports the requested state or <see cref="RequestTimeout"/> passes; a failure is
-/// shown until the device's state next changes.
+/// shown until the device's state next changes. Lid and auto-connect signals are raised as events;
+/// the app decides from its settings whether to act on them.
 /// </summary>
 public sealed class HeadphoneSource(
     IPairedDeviceSource paired, IAppleAdvertSource adverts, IConnectionControl control, TimeProvider time, MatcherOptions? options = null)
@@ -43,6 +44,8 @@ public sealed class HeadphoneSource(
     public event Action<string>? LidOpened;
 
     public event Action<string>? LidClosed;
+
+    public event Action<string>? AutoConnectReady;
 
     public IReadOnlyList<HeadphoneSnapshot> Current { get { lock (gate) return [.. published]; } }
 
@@ -195,7 +198,7 @@ public sealed class HeadphoneSource(
     {
         if (advert.Model is null) return;
         ModelStream stream;
-        string? lidDevice;
+        string? lidDevice, connectDevice;
         bool lidOpened, accepted;
         lock (gate)
         {
@@ -209,11 +212,13 @@ public sealed class HeadphoneSource(
             }
             // Before the matcher: a case that was shut comes back on a new address the matcher may not accept yet.
             lidDevice = TrackLid(stream, advert, out lidOpened);
+            connectDevice = TrackTakeOut(stream, advert);
             stream.Matcher.Observe(advert);
             accepted = stream.Matcher.Accept(advert);
             if (accepted) stream.Last = advert;
         }
         if (lidDevice is not null) (lidOpened ? LidOpened : LidClosed)?.Invoke(lidDevice);
+        if (connectDevice is not null) AutoConnectReady?.Invoke(connectDevice);
         if (!accepted) return;
         stream.Tracker.OnAdvert(advert);
         Publish();
@@ -296,10 +301,29 @@ public sealed class HeadphoneSource(
         if (!open || advert.Rssi < PopupMinRssi || Target(advert.ModelId) is not { } target) return null;
         var generation = ++stream.LidGeneration;
         stream.LidDevice = target;
+        stream.TakeOutPending = true;
         stream.LidAddresses.Add(advert.Address);
         stream.LidTimer = time.CreateTimer(_ => LidSilent(stream, generation), null, LidSilence, Timeout.InfiniteTimeSpan);
         opened = true;
         return target;
+    }
+
+    /// <summary>
+    /// After a lid opening (see <see cref="TrackLid"/>), the first advert from one of the opening's
+    /// addresses with the pods no longer both in the case means they were taken out. That is checked
+    /// once per opening, so a failed connect is not retried on every advert and disconnecting by hand
+    /// while the pods are out does not connect them straight back. Returns the device to connect, if
+    /// its model can auto connect and it is not connected already. (The adverts' own "connect" bit,
+    /// status bit 6, was measured on 2026-11-18 to appear only while pods go back into the case.)
+    /// Caller holds <see cref="gate"/>.
+    /// </summary>
+    string? TrackTakeOut(ModelStream stream, AppleAdvert advert)
+    {
+        if (!stream.TakeOutPending || stream.LidDevice is not { } device
+            || !stream.LidAddresses.Contains(advert.Address) || advert.BothInCase) return null;
+        stream.TakeOutPending = false;
+        var capable = advert.Model is { } model && model.Capabilities.HasFlag(AppleCapabilities.AutoConnect);
+        return capable && devices.FirstOrDefault(d => d.Id == device) is { IsConnected: false } ? device : null;
     }
 
     /// <summary>Caller holds <see cref="gate"/>.</summary>
@@ -345,5 +369,6 @@ public sealed class HeadphoneSource(
         public ITimer? LidTimer { get; set; }
         public HashSet<ulong> LidAddresses { get; } = [];   // the pods that reported the opening
         public int LidGeneration { get; set; }
+        public bool TakeOutPending { get; set; }   // the open lid's pods have not been taken out yet
     }
 }

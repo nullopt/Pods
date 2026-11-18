@@ -4,7 +4,8 @@ namespace Pods.Core.Settings;
 
 /// <summary>
 /// A device's effective media settings: its own value where it has one, otherwise the app default.
-/// Auto connect is stored alongside them but has no behaviour yet.
+/// Auto connect sits alongside them on the tile; the app reads it when the source raises
+/// <see cref="Devices.IHeadphoneSource.AutoConnectReady"/>.
 /// </summary>
 public sealed record MediaSettings(bool EarDetection, bool PauseOnDisconnect, bool PlayOnConnect)
 {

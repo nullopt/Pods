@@ -1,4 +1,4 @@
-using Microsoft.Extensions.Time.Testing;
+﻿using Microsoft.Extensions.Time.Testing;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Tests.Apple;
@@ -653,5 +653,132 @@ public sealed class HeadphoneSourceTests : IDisposable
         Assert.Null(noCap.LidPopup);
         adverts.Raise(noCap);
         Assert.Empty(opened);
+    }
+
+    // Auto connect: the case opened nearby, then the pods left it (measured 2026-11-18: 0x15/0x75, then 0x01).
+
+    static AppleAdvert PodsOutMeasured(ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x01), -50, address)!;
+    static AppleAdvert OnePodOut(ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x31), -50, address)!;
+
+    List<string> WatchAutoConnect()
+    {
+        List<string> ready = [];
+        source.AutoConnectReady += ready.Add;
+        return ready;
+    }
+
+    [Fact]
+    public void LidOpenThenPodsOut_RaisesAutoConnect()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        Assert.Empty(ready);
+        adverts.Raise(PodsOutMeasured());
+        Assert.Equal([ProId], ready);
+    }
+
+    [Fact]
+    public void OnePodOut_RaisesAutoConnect()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        adverts.Raise(OnePodOut());
+        Assert.Equal([ProId], ready);
+    }
+
+    [Fact]
+    public void PodsOutWithoutLidOpen_NoEvent()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(PodsOutMeasured());
+        adverts.Raise(OnePodOut());
+        Assert.Empty(ready);
+    }
+
+    [Fact]
+    public void WeakLidOpen_NoEvent()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen((short)(HeadphoneSource.PopupMinRssi - 1)));
+        adverts.Raise(PodsOutMeasured());
+        Assert.Empty(ready);
+    }
+
+    [Fact]
+    public void PodsOutFromAnotherSet_NoEvent()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen(address: 1));
+        adverts.Raise(PodsOutMeasured(address: 9));
+        Assert.Empty(ready);
+    }
+
+    [Fact]
+    public void PodsStayOut_RaisesOncePerOpening()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        for (var i = 0; i < 30; i++)
+        {
+            adverts.Raise(PodsOutMeasured());
+            time.Advance(TimeSpan.FromMilliseconds(300));
+        }
+        Assert.Single(ready);
+        adverts.Raise(LidShut());
+        adverts.Raise(LidOpen());
+        adverts.Raise(PodsOutMeasured());
+        Assert.Equal([ProId, ProId], ready);
+    }
+
+    [Fact]
+    public void DeviceAlreadyConnected_NoEvent()
+    {
+        StartWith(ProDevice with { IsConnected = true });
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        adverts.Raise(PodsOutMeasured());
+        Assert.Empty(ready);
+    }
+
+    /// <summary>Disconnecting by hand while the pods are out must not connect them straight back.</summary>
+    [Fact]
+    public void TakenOutWhileConnected_ThenDisconnected_NoEvent()
+    {
+        StartWith(ProDevice with { IsConnected = true });
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        adverts.Raise(PodsOutMeasured());
+        paired.Set(ProDevice);
+        adverts.Raise(PodsOutMeasured());
+        Assert.Empty(ready);
+    }
+
+    [Fact]
+    public void TwoSameModel_AutoConnectForTarget()
+    {
+        StartWith(ProDevice, Pro2Device);
+        paired.Set(ProDevice, Pro2Device with { IsConnected = true });
+        paired.Set(ProDevice, Pro2Device);   // Pro2 was the last one connected, so it is the target
+        var ready = WatchAutoConnect();
+        adverts.Raise(LidOpen());
+        adverts.Raise(PodsOutMeasured());
+        Assert.Equal([Pro2Id], ready);
+    }
+
+    [Fact]
+    public void ModelWithoutAutoConnect_NoEvent()
+    {
+        StartWith(ProDevice);
+        var ready = WatchAutoConnect();
+        var lidOnly = ModelCatalog.Find("1420")! with { Capabilities = AppleCapabilities.LidPopup };
+        adverts.Raise(LidOpen() with { Model = lidOnly });
+        adverts.Raise(PodsOutMeasured() with { Model = lidOnly });
+        Assert.Empty(ready);
     }
 }

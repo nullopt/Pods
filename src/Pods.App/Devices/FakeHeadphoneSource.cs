@@ -31,6 +31,8 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
 
     public event Action<string>? LidClosed { add { } remove { } }
 
+    public event Action<string>? AutoConnectReady { add { } remove { } }
+
     /// <summary>Pretends the first demo device's case lid opened.</summary>
     internal void RaiseLidOpened() => LidOpened?.Invoke(devices[0].Key);
 

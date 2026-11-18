@@ -15,6 +15,12 @@ public interface IHeadphoneSource
     /// <summary>Raised on any thread when a lid reported by <see cref="LidOpened"/> closes (or its adverts stop).</summary>
     event Action<string>? LidClosed;
 
+    /// <summary>
+    /// Raised on any thread, once per opening reported by <see cref="LidOpened"/>, when the pods are taken
+    /// out of the case and the device can auto connect but is not connected. The argument is its key.
+    /// </summary>
+    event Action<string>? AutoConnectReady;
+
     void Start();
     void Stop();
     void Connect(string key);
