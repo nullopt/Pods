@@ -15,7 +15,7 @@
     <ApplicationIcon>Assets\Pods.ico</ApplicationIcon>
     <RootNamespace>Pods.App</RootNamespace>
     <AssemblyName>Pods</AssemblyName>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);DISABLE_XAML_GENERATED_MAIN</DefineConstants>
   </PropertyGroup>
