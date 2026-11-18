@@ -25,6 +25,8 @@ internal sealed class UpdateService(SettingsStore settings, DispatcherQueue ui, 
     static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
     static readonly TimeSpan SmallTimeout = TimeSpan.FromSeconds(30);
     static readonly TimeSpan InstallerTimeout = TimeSpan.FromMinutes(10);
+    static readonly TimeSpan DownloadKept = TimeSpan.FromHours(1);
+    static readonly string DownloadRoot = Path.Combine(Path.GetTempPath(), "Pods");
     static readonly string InstallFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "Pods");
 
     static readonly HttpClient Http = CreateClient();
@@ -46,6 +48,7 @@ internal sealed class UpdateService(SettingsStore settings, DispatcherQueue ui, 
             Log.Information("Update checks off: not running from {Folder}", InstallFolder);
             return;
         }
+        _ = Task.Run(DeleteOldDownloads);
         // One-shot, re-armed after each tick: changing the Interval of a running repeating timer from
         // its own Tick does not take effect (0.1.2 kept checking every minute).
         timer = ui.CreateTimer();
@@ -110,7 +113,7 @@ internal sealed class UpdateService(SettingsStore settings, DispatcherQueue ui, 
             var manifest = UpdateVerifier.VerifyManifest(manifestBytes, signature, offer, running, TrustedKeys.All)
                 ?? throw new UpdateException("the manifest is not signed by a trusted key or does not match the release");
 
-            var folder = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), "Pods", "update-" + Guid.NewGuid().ToString("N")));
+            var folder = Directory.CreateDirectory(Path.Combine(DownloadRoot, "update-" + Guid.NewGuid().ToString("N")));
             var path = Path.Combine(folder.FullName, manifest.Installer);
             await DownloadFileAsync(offer.Installer, path);
 
@@ -135,6 +138,32 @@ internal sealed class UpdateService(SettingsStore settings, DispatcherQueue ui, 
                 .AddText(Strings.Get("UpdateFailedTitle"))
                 .AddText(string.Format(Strings.Get("UpdateFailedBody"), clicked.ToString(3)))
                 .BuildNotification());
+        }
+    }
+
+    /// <summary>
+    /// Removes the download folders of earlier updates and failed attempts. Recent ones stay: the
+    /// installer that just started this copy may still be running from its folder.
+    /// </summary>
+    static void DeleteOldDownloads()
+    {
+        try
+        {
+            if (!Directory.Exists(DownloadRoot)) return;
+            var cutoff = DateTime.UtcNow - DownloadKept;
+            foreach (var folder in new DirectoryInfo(DownloadRoot).EnumerateDirectories("update-*"))
+            {
+                if (folder.LastWriteTimeUtc > cutoff) continue;
+                try { folder.Delete(recursive: true); }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+                {
+                    Log.Debug(e, "Could not delete old update download {Folder}", folder.FullName);
+                }
+            }
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            Log.Debug(e, "Could not clean up old update downloads");
         }
     }
 
