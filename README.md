@@ -1,3 +1,5 @@
+<p align="center"><img src=".github/logo.png" width="128" alt="Pods logo"></p>
+
 # Pods
 
 AirPods companion for Windows: battery, ear detection and quick connect for Apple AirPods
