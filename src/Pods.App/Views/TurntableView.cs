@@ -13,9 +13,12 @@ internal enum TurntablePart { Whole, Left, Right }
 
 /// <summary>
 /// Shows device artwork from a turntable sprite sheet (<see cref="Turntable"/>): the whole frame or
-/// one part, spinning or still on the front view, at any height. Each sheet is decoded once and
-/// shared by every view of it (a decoded sheet is about 17 MB). Spinning is a composition animation,
-/// so it needs no app work per frame. Hidden when there is nothing to show.
+/// one part, spinning or still on the front view, at any height. Standing still it shows the sheet's
+/// front frame from a small still (<c>Stills/&lt;sheet&gt;.webp</c>, made by tools/make_stills.py);
+/// only a spinning view decodes the whole sheet (about 17 MB), showing the still until it is ready.
+/// Each image is decoded once and shared by every view of it, and let go once no view or
+/// <see cref="Keep"/> holds it. Spinning is a composition animation, so it needs no app work per
+/// frame. Hidden when there is nothing to show.
 /// </summary>
 internal sealed partial class TurntableView : UserControl
 {
@@ -24,11 +27,11 @@ internal sealed partial class TurntableView : UserControl
     static List<SheetSurface> kept = [];
 
     /// <summary>
-    /// Keeps these sheets decoded (and lets go of others kept before), so artwork for connected
+    /// Keeps these sheets' stills decoded (and lets go of others kept before), so artwork for connected
     /// headsets is ready when the flyout opens instead of decoding then. UI thread only.
     /// </summary>
     public static void Keep(IEnumerable<string?> sheets) =>
-        kept = [.. sheets.Select(SurfaceFor).OfType<SheetSurface>().Distinct()];
+        kept = [.. sheets.Select(s => SurfaceFor(s, still: true)).OfType<SheetSurface>().Distinct()];
 
     /// <summary>Sheet names shipped with the app (file names without extension).</summary>
     public static IReadOnlySet<string> Available { get; } =
@@ -43,7 +46,7 @@ internal sealed partial class TurntableView : UserControl
 
     SpriteVisual? sprite;
     CompositionSurfaceBrush? brush;
-    SheetSurface? surface;
+    SheetSurface? still, sheet;   // sheet only while spinning
     bool spinning;
 
     public TurntableView()
@@ -72,22 +75,19 @@ internal sealed partial class TurntableView : UserControl
     void Update()
     {
         if (!IsLoaded) return;
-        var sheetSurface = SurfaceFor(Sheet);
-        if (!ReferenceEquals(sheetSurface, surface))
-        {
-            if (surface is not null) surface.Ready -= Update;
-            surface = sheetSurface;
-            if (surface is not null) surface.Ready += Update;
-            StopSpinning();
-        }
+        Track(ref still, SurfaceFor(Sheet, still: true));
+        Track(ref sheet, IsSpinning ? SurfaceFor(Sheet, still: false) : null);
+        // The sheet once it has decoded; until then, and while standing still, the still.
+        var (surface, columns, rows) = sheet?.Size is not null ? (sheet, Turntable.Columns, Turntable.Rows) : (still, 1, 1);
         if (surface?.Size is not { } size)
         {
+            StopSpinning();
             Visibility = Visibility.Collapsed;
             return;
         }
 
-        var frameWidth = (float)size.Width / Turntable.Columns;
-        var frameHeight = (float)size.Height / Turntable.Rows;
+        var frameWidth = (float)size.Width / columns;
+        var frameHeight = (float)size.Height / rows;
         var parts = Turntable.Parts(Sheet!);
         if (Part != TurntablePart.Whole && parts is null)
         {
@@ -115,7 +115,7 @@ internal sealed partial class TurntableView : UserControl
 
         StopSpinning();
         brush.Offset = Offset(0);
-        if (IsSpinning)
+        if (surface == sheet)
         {
             var compositor = brush.Compositor;
             var step = compositor.CreateStepEasingFunction();
@@ -152,9 +152,18 @@ internal sealed partial class TurntableView : UserControl
     {
         if (IsLoaded) return;
         StopSpinning();
-        if (surface is not null) surface.Ready -= Update;
-        surface = null;
+        Track(ref still, null);
+        Track(ref sheet, null);
         if (brush is not null) brush.Surface = null;
+    }
+
+    /// <summary>Holds this image instead of the previous one, hearing when it has decoded.</summary>
+    void Track(ref SheetSurface? field, SheetSurface? next)
+    {
+        if (ReferenceEquals(field, next)) return;
+        if (field is not null) field.Ready -= Update;
+        field = next;
+        if (field is not null) field.Ready += Update;
     }
 
     void StopSpinning()
@@ -164,13 +173,14 @@ internal sealed partial class TurntableView : UserControl
         spinning = false;
     }
 
-    /// <summary>The shared decoded surface for a sheet; starts decoding on first use.</summary>
-    static SheetSurface? SurfaceFor(string? sheet)
+    /// <summary>The shared decoded surface for a sheet or its still; starts decoding on first use.</summary>
+    static SheetSurface? SurfaceFor(string? sheet, bool still)
     {
         if (sheet is null || !Available.Contains(sheet)) return null;
-        if (Surfaces.TryGetValue(sheet, out var weak) && weak.TryGetTarget(out var cached)) return cached;
-        var created = new SheetSurface(new Uri(Path.Combine(Folder, sheet + ".webp")));
-        Surfaces[sheet] = new WeakReference<SheetSurface>(created);
+        var path = still ? Path.Combine(Folder, "Stills", sheet + ".webp") : Path.Combine(Folder, sheet + ".webp");
+        if (Surfaces.TryGetValue(path, out var weak) && weak.TryGetTarget(out var cached)) return cached;
+        var created = new SheetSurface(new Uri(path));
+        Surfaces[path] = new WeakReference<SheetSurface>(created);
         return created;
     }
 
