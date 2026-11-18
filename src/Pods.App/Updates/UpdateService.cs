@@ -46,11 +46,15 @@ internal sealed class UpdateService(SettingsStore settings, DispatcherQueue ui, 
             Log.Information("Update checks off: not running from {Folder}", InstallFolder);
             return;
         }
+        // One-shot, re-armed after each tick: changing the Interval of a running repeating timer from
+        // its own Tick does not take effect (0.1.2 kept checking every minute).
         timer = ui.CreateTimer();
+        timer.IsRepeating = false;
         timer.Interval = FirstCheckDelay;
         timer.Tick += (t, _) =>
         {
             t.Interval = CheckInterval;
+            t.Start();
             if (settings.Get(SettingKeys.CheckForUpdates)) _ = CheckAsync();
         };
         timer.Start();
