@@ -13,4 +13,5 @@ jobs:
       - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
+      - run: dotnet build Pods.slnx --configuration Release
       - run: dotnet test --project tests/Pods.Core.Tests --configuration Release
