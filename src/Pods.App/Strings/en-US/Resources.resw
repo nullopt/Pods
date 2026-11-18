@@ -32,6 +32,14 @@
   <data name="AppPauseOnDisconnect.Text" xml:space="preserve"><value>Pause on disconnect</value></data>
   <data name="AppPlayOnConnect.Text" xml:space="preserve"><value>Play on connect</value></data>
   <data name="AppAutoConnect.Text" xml:space="preserve"><value>Auto connect</value></data>
+  <data name="AppCheckForUpdates.Text" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="UpdateAvailableTitle" xml:space="preserve"><value>Update available</value></data>
+  <data name="UpdateAvailableBody" xml:space="preserve"><value>Pods {0} is available.</value></data>
+  <data name="UpdateButton" xml:space="preserve"><value>Update</value></data>
+  <data name="UpdateNotesButton" xml:space="preserve"><value>Release notes</value></data>
+  <data name="UpdateDownloadingBody" xml:space="preserve"><value>Downloading Pods {0}…</value></data>
+  <data name="UpdateFailedTitle" xml:space="preserve"><value>Update failed</value></data>
+  <data name="UpdateFailedBody" xml:space="preserve"><value>Pods {0} could not be installed. Details are in the log.</value></data>
   <data name="TileLowBattery.Text" xml:space="preserve"><value>Low battery</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Controls]ToolTipService.ToolTip" xml:space="preserve"><value>Settings for this device</value></data>
   <data name="TileSettings.[using:Microsoft.UI.Xaml.Automation]AutomationProperties.Name" xml:space="preserve"><value>Settings for this device</value></data>

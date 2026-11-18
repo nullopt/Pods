@@ -14,11 +14,13 @@ using Pods.App.Devices;
 using Pods.App.Logging;
 using Pods.App.Media;
 using Pods.App.Tray;
+using Pods.App.Updates;
 using Pods.App.Views;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Media;
 using Pods.Core.Settings;
+using Pods.Core.Updates;
 using Serilog;
 
 namespace Pods.App;
@@ -37,6 +39,7 @@ public partial class App : Application
     DevicesViewModel? flyoutDevices;
     long flyoutClosedAt = long.MinValue / 2;
     DispatcherQueue? ui;
+    UpdateService? updates;
 
     public App() => InitializeComponent();
 
@@ -67,7 +70,11 @@ public partial class App : Application
 
         ui = DispatcherQueue.GetForCurrentThread();
         // Subscribed once, before registering, as the notification API requires.
-        AppNotificationManager.Default.NotificationInvoked += (_, _) => ui?.TryEnqueue(OpenFlyout);
+        AppNotificationManager.Default.NotificationInvoked += (_, e) =>
+        {
+            var arguments = new Dictionary<string, string>(e.Arguments);
+            ui?.TryEnqueue(() => OnNotificationInvoked(arguments));
+        };
         RegisterNotifications();
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
@@ -80,6 +87,8 @@ public partial class App : Application
         tray = CreateTray();
         OnHeadphonesChanged();
         ui.TryEnqueue(DispatcherQueuePriority.Low, WarmUpFlyout);
+        updates = new UpdateService(Settings, ui, ShowNotification, ExitApp);
+        updates.Start();
         // A notification clicked after Pods exited starts it with that activation instead of NotificationInvoked.
         if (AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.AppNotification) OpenFlyout();
     }
@@ -314,21 +323,42 @@ public partial class App : Application
 
     void ShowLowBatteryNotification(LowBatteryAlert alert)
     {
-        if (!notificationsRegistered) return;
         var body = string.Format(Strings.Get("LowBattery" + (alert.Part == BatteryPartKind.Buds ? "Single" : alert.Part)), alert.Name, alert.Percent);
         Log.Information("Low battery: {Body}", body);
+        ShowNotification(new AppNotificationBuilder()
+            .AddText(Strings.Get("LowBatteryTitle"))
+            .AddText(body)
+            .AddArgument("action", "open")
+            .BuildNotification());
+    }
+
+    void ShowNotification(AppNotification notification)
+    {
+        if (!notificationsRegistered) return;
         try
         {
-            var notification = new AppNotificationBuilder()
-                .AddText(Strings.Get("LowBatteryTitle"))
-                .AddText(body)
-                .AddArgument("action", "open")
-                .BuildNotification();
             AppNotificationManager.Default.Show(notification);
         }
         catch (Exception e)
         {
             Log.Warning(e, "Showing a notification failed");
+        }
+    }
+
+    /// <summary>A Pods notification or one of its buttons was clicked.</summary>
+    void OnNotificationInvoked(Dictionary<string, string> arguments)
+    {
+        switch (arguments.GetValueOrDefault("action"))
+        {
+            case "update" when updates is not null && ReleaseParser.ParseVersion(arguments.GetValueOrDefault("version") ?? "") is { } version:
+                _ = updates.InstallAsync(version);
+                break;
+            case "notes":
+                updates?.OpenReleasePage();
+                break;
+            default:
+                OpenFlyout();
+                break;
         }
     }
 
@@ -384,6 +414,7 @@ public partial class App : Application
     void ExitApp()
     {
         PowerManager.SystemSuspendStatusChanged -= OnSuspendStatusChanged;
+        updates?.Dispose();
         DetachHeadphones();
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();

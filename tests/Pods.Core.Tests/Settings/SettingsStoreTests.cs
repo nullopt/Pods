@@ -27,6 +27,14 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void CheckForUpdates_DefaultsOn_GlobalOnly()
+    {
+        var s = SettingsStore.Load(dir);
+        Assert.True(s.Get(SettingKeys.CheckForUpdates));
+        Assert.Throws<ArgumentException>(() => s.SetForDevice(SettingKeys.CheckForUpdates, Dev, false));
+    }
+
+    [Fact]
     public void GlobalChange_AppliesToDevicesWithoutOverride()
     {
         var s = SettingsStore.Load(dir);

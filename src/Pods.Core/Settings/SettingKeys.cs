@@ -21,6 +21,9 @@ public static class SettingKeys
     public static readonly Setting<bool?> LidPopup = new("lidPopup", null, Json.NullableBoolean, true);
     public static readonly Setting<string?> CustomPicture = new("customPicture", null, Json.String, true);
 
+    /// <summary>Daily check of GitHub Releases for a signed update; global only.</summary>
+    public static readonly Setting<bool> CheckForUpdates = new("checkForUpdates", true, Json.Boolean, false);
+
     /// <summary>Serilog minimum level name; global only.</summary>
     public static readonly Setting<string> LogLevel = new("logLevel", "Warning", Json.String, false);
 }

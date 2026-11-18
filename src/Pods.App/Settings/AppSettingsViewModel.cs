@@ -27,6 +27,7 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
         pauseOnDisconnect = settings.Get(SettingKeys.PauseOnDisconnect);
         playOnConnect = settings.Get(SettingKeys.PlayOnConnect);
         autoConnect = settings.Get(SettingKeys.AutoConnect);
+        checkForUpdates = settings.Get(SettingKeys.CheckForUpdates);
 
         var level = settings.Get(SettingKeys.LogLevel);
         var index = SettingChoices.LogLevels.ToList().FindIndex(l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
@@ -80,6 +81,18 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
     {
         get => autoConnect;
         set => SetDefault(ref autoConnect, value, () => settings.SetGlobal(SettingKeys.AutoConnect, value));
+    }
+
+    bool checkForUpdates;
+    /// <summary>Daily check of GitHub for a signed update (installed copies only).</summary>
+    public bool CheckForUpdates
+    {
+        get => checkForUpdates;
+        set
+        {
+            if (!SetProperty(ref checkForUpdates, value)) return;
+            Save(() => settings.SetGlobal(SettingKeys.CheckForUpdates, value));
+        }
     }
 
     /// <summary>Writes a default, then lets devices that follow it show the new value.</summary>

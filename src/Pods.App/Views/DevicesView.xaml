@@ -230,6 +230,12 @@
                 <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.AutoConnect, Mode=TwoWay}"
                               AutomationProperties.LabeledBy="{Binding ElementName=AppAutoLabel}" />
             </Grid>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppUpdatesLabel" x:Uid="AppCheckForUpdates" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.CheckForUpdates, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppUpdatesLabel}" />
+            </Grid>
             <Grid ColumnSpacing="8" Margin="0,4,0,0">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="AppLogLevelLabel" x:Uid="AppLogLevel" FontSize="13" VerticalAlignment="Center"
