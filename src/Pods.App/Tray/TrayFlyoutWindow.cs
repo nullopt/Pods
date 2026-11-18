@@ -46,16 +46,20 @@ internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
             e.Handled = true;
             CloseOnce();
         };
-        // Closing inside the activation callback is re-entrant; let it finish first.
-        Activated += (_, e) =>
-        {
-            if (e.WindowActivationState == WindowActivationState.Deactivated) DispatcherQueue.TryEnqueue(CloseOnce);
-        };
-        Closed += (_, _) =>
-        {
-            closed = true;
-            Dismissed?.Invoke();
-        };
+        Activated += OnActivated;
+    }
+
+    // Closing inside the activation callback is re-entrant; let it finish first.
+    void OnActivated(object sender, WindowActivatedEventArgs e)
+    {
+        if (e.WindowActivationState == WindowActivationState.Deactivated) DispatcherQueue.TryEnqueue(CloseOnce);
+    }
+
+    protected override void OnClosed()
+    {
+        closed = true;
+        Activated -= OnActivated;
+        Dismissed?.Invoke();
     }
 
     /// <summary>Raised once when the flyout closes, for whatever reason.</summary>

@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Microsoft.UI;
+using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,10 +13,22 @@ namespace Pods.App.Tray;
 /// A borderless, always-on-top window sized to its content, kept out of Alt+Tab. Subclasses decide
 /// where it goes. Created when needed and closed afterwards, so it costs nothing at rest.
 /// </summary>
+/// <remarks>
+/// <para>WinUI's native window keeps the handlers on its own events alive, and a handler that refers to
+/// the window then keeps the closed window and its whole tree alive (measured: about 6 MB per flyout,
+/// never freed). So subclasses do their cleanup in <see cref="OnClosed"/>, never in a <c>Closed</c>
+/// handler of their own, and remove any other handler they put on the window itself there.</para>
+/// <para>A closed window's .NET wrappers are tiny while the native tree they hold is megabytes, so the
+/// garbage collector would not run for a long time; a full collection shortly after a close frees it.</para>
+/// </remarks>
 internal abstract partial class PopupWindow : Window
 {
+    static readonly TimeSpan CollectAfter = TimeSpan.FromSeconds(1);
+    static DispatcherQueueTimer? collectTimer;
+
     protected PopupWindow(FrameworkElement view)
     {
+        Closed += OnWindowClosed;
         // A Canvas measures its child without limits, so the content can grow past the current window size.
         View = view;
         Content = new Canvas { Children = { view } };
@@ -33,6 +46,36 @@ internal abstract partial class PopupWindow : Window
             IsWaitingForLoad = false;
             Reveal(activateWhenLoaded);
         };
+    }
+
+    void OnWindowClosed(object sender, WindowEventArgs e)
+    {
+        Closed -= OnWindowClosed;
+        OnClosed();
+        CollectSoon(DispatcherQueue);
+    }
+
+    /// <summary>Called once when the window has closed: stop timers, remove handlers on the window, tell owners.</summary>
+    protected virtual void OnClosed() { }
+
+    /// <summary>One collection after a burst of closes (a flyout closing as the lid popup goes, say), not one each.</summary>
+    static void CollectSoon(DispatcherQueue ui)
+    {
+        if (collectTimer is null)
+        {
+            collectTimer = ui.CreateTimer();
+            collectTimer.Interval = CollectAfter;
+            collectTimer.IsRepeating = false;
+            collectTimer.Tick += (_, _) =>
+            {
+                // Finalizers release the native trees; the second pass frees what they let go.
+                GC.Collect();
+                GC.WaitForPendingFinalizers();
+                GC.Collect();
+            };
+        }
+        collectTimer.Stop();
+        collectTimer.Start();
     }
 
     protected FrameworkElement View { get; }

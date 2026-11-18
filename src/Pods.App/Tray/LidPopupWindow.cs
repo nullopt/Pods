@@ -50,13 +50,14 @@ internal sealed partial class LidPopupWindow : PopupWindow
             // ask where the cursor really is.
             if (!leaving && !CursorOverWindow()) timer.Start();
         };
-        Closed += (_, _) =>
-        {
-            closed = true;
-            timer.Stop();
-            CompositionTarget.Rendering -= OnSlideFrame;
-            Dismissed?.Invoke();
-        };
+    }
+
+    protected override void OnClosed()
+    {
+        closed = true;
+        timer.Stop();
+        CompositionTarget.Rendering -= OnSlideFrame;
+        Dismissed?.Invoke();
     }
 
     public DeviceCardViewModel Card { get; }
