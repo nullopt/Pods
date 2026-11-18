@@ -7,7 +7,6 @@ using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Media.Imaging;
 using Microsoft.Windows.AppLifecycle;
-using Microsoft.Windows.AppNotifications;
 using Microsoft.Windows.AppNotifications.Builder;
 using Microsoft.Windows.System.Power;
 using Pods.App.Devices;
@@ -34,7 +33,7 @@ public partial class App : Application
     MediaAutomation media = null!;
     readonly TrayCardViewModel trayCard = new();
     bool trayLow;
-    bool notificationsRegistered;
+    Notifier notifier = null!;
     TrayFlyoutWindow? flyout;
     LidPopupWindow? lidPopup;
     DevicesViewModel? flyoutDevices;
@@ -73,13 +72,7 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += (_, e) => Log.Error(e.Exception, "Unobserved task exception");
 
         ui = DispatcherQueue.GetForCurrentThread();
-        // Subscribed once, before registering, as the notification API requires.
-        AppNotificationManager.Default.NotificationInvoked += (_, e) =>
-        {
-            var arguments = new Dictionary<string, string>(e.Arguments);
-            ui?.TryEnqueue(() => OnNotificationInvoked(arguments));
-        };
-        RegisterNotifications();
+        notifier = new Notifier(ui, OnNotificationInvoked);
         var paired = new WindowsPairedDeviceSource();
         Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System,
             aap: CreateAapHub(paired));
@@ -92,7 +85,7 @@ public partial class App : Application
         tray = CreateTray();
         OnHeadphonesChanged();
         ui.TryEnqueue(DispatcherQueuePriority.Low, WarmUpFlyout);
-        updates = new UpdateService(Settings, ui, ShowNotification, ExitApp);
+        updates = new UpdateService(Settings, ui, notifier.Show, ExitApp);
         updates.Start();
         // A notification clicked after Pods exited starts it with that activation instead of NotificationInvoked.
         if (AppInstance.GetCurrent().GetActivatedEventArgs().Kind == ExtendedActivationKind.AppNotification) OpenFlyout();
@@ -304,53 +297,18 @@ public partial class App : Application
         popup.Show();
     }
 
-    /// <summary>Clicking a Pods notification opens the device list.</summary>
-    void RegisterNotifications()
-    {
-        try
-        {
-            AppNotificationManager.Default.Register();
-            notificationsRegistered = true;
-        }
-        catch (Exception e)
-        {
-            Log.Warning(e, "Notifications unavailable");
-        }
-    }
-
-    void UnregisterNotifications()
-    {
-        if (!notificationsRegistered) return;
-        notificationsRegistered = false;
-        try { AppNotificationManager.Default.Unregister(); }
-        catch (Exception e) { Log.Warning(e, "Unregistering notifications failed"); }
-    }
-
     void ShowLowBatteryNotification(LowBatteryAlert alert)
     {
         var body = string.Format(Strings.Get("LowBattery" + (alert.Part == BatteryPartKind.Buds ? "Single" : alert.Part)), alert.Name, alert.Percent);
         Log.Information("Low battery: {Body}", body);
-        ShowNotification(new AppNotificationBuilder()
+        notifier.Show(new AppNotificationBuilder()
             .AddText(Strings.Get("LowBatteryTitle"))
             .AddText(body)
             .AddArgument("action", "open")
             .BuildNotification());
     }
 
-    void ShowNotification(AppNotification notification)
-    {
-        if (!notificationsRegistered) return;
-        try
-        {
-            AppNotificationManager.Default.Show(notification);
-        }
-        catch (Exception e)
-        {
-            Log.Warning(e, "Showing a notification failed");
-        }
-    }
-
-    /// <summary>A Pods notification or one of its buttons was clicked.</summary>
+    /// <summary>A Pods notification or one of its buttons was clicked; a plain click opens the device list.</summary>
     void OnNotificationInvoked(Dictionary<string, string> arguments)
     {
         switch (arguments.GetValueOrDefault("action"))
@@ -406,7 +364,7 @@ public partial class App : Application
     void Restart()
     {
         DisposeTray();
-        UnregisterNotifications();
+        notifier.Unregister();
         Program.ReleaseInstanceKey();
         Log.CloseAndFlush();
         // Returns only if the restart could not be started.
@@ -415,7 +373,7 @@ public partial class App : Application
         Log.Error("Restart failed: {Reason}", failure);
         AppInstance.FindOrRegisterForKey("main");
         tray = CreateTray();
-        RegisterNotifications();
+        notifier.Register();
     }
 
 #if DEBUG
@@ -447,7 +405,7 @@ public partial class App : Application
         Headphones.Stop();
         (Headphones as IDisposable)?.Dispose();
         DisposeTray();
-        UnregisterNotifications();
+        notifier.Unregister();
         Log.CloseAndFlush();
         Exit();
     }
