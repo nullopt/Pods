@@ -450,4 +450,160 @@ public sealed class HeadphoneSourceTests : IDisposable
         StartWith(ProDevice);
         Assert.False(Card(ProDevice.Id).IsSingleBattery);
     }
+
+    // Lid events
+
+    const string Pro2Id = "aa0000000002";
+    static string ProId => ProDevice.Id;
+    static readonly PairedDevice Pro2Device = new(Pro2Id, "Second Pro", "1420", false);
+    static AppleAdvert LidOpen(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x75), rssi, address)!;
+    static AppleAdvert LidShut(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x01), rssi, address)!;
+
+    (List<string> Opened, List<string> Closed) WatchLid()
+    {
+        List<string> opened = [], closed = [];
+        source.LidOpened += opened.Add;
+        source.LidClosed += closed.Add;
+        return (opened, closed);
+    }
+
+    [Fact]
+    public void LidHelpers_DecodeAsOpenAndShut()
+    {
+        Assert.True(LidOpen().LidPopup);
+        Assert.False(LidShut().LidPopup);
+    }
+
+    [Fact]
+    public void LidOpens_RaisesOpenedForDevice()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen());
+        Assert.Equal([ProId], opened);
+    }
+
+    [Fact]
+    public void LidOpens_BeforeMatcherAccepts()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen(-64));
+        Assert.Equal([ProId], opened);
+    }
+
+    [Fact]
+    public void Rssi_BelowMin_NoEvent()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen(-66));
+        Assert.Empty(opened);
+    }
+
+    [Fact]
+    public void Rssi_AtMin_Raises()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen(HeadphoneSource.PopupMinRssi));
+        Assert.Equal(-65, HeadphoneSource.PopupMinRssi);
+        Assert.Single(opened);
+    }
+
+    [Fact]
+    public void LidStaysOpen_RaisesOnce()
+    {
+        StartWith(ProDevice);
+        var (opened, closed) = WatchLid();
+        for (var i = 0; i < 200; i++)
+        {
+            adverts.Raise(LidOpen());
+            time.Advance(TimeSpan.FromMilliseconds(300));
+        }
+        Assert.Single(opened);
+        Assert.Empty(closed);
+    }
+
+    [Fact]
+    public void LidShutAdvert_RaisesClosed()
+    {
+        StartWith(ProDevice);
+        var (_, closed) = WatchLid();
+        adverts.Raise(LidOpen());
+        adverts.Raise(LidShut());
+        Assert.Equal([ProId], closed);
+    }
+
+    [Fact]
+    public void Silence_RaisesClosed()
+    {
+        StartWith(ProDevice);
+        var (_, closed) = WatchLid();
+        adverts.Raise(LidOpen());
+        time.Advance(TimeSpan.FromMilliseconds(2900));
+        Assert.Empty(closed);
+        time.Advance(TimeSpan.FromMilliseconds(100));
+        Assert.Equal([ProId], closed);
+    }
+
+    [Fact]
+    public void CloseAndReopen_RaisesTwice()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen());
+        adverts.Raise(LidShut());
+        adverts.Raise(LidOpen());
+        Assert.Equal(2, opened.Count);
+    }
+
+    [Fact]
+    public void SilenceAndReopen_RaisesTwice()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen());
+        time.Advance(HeadphoneSource.LidSilence);
+        adverts.Raise(LidOpen());
+        Assert.Equal(2, opened.Count);
+    }
+
+    [Fact]
+    public void ShutWithoutOpen_NoClosed()
+    {
+        StartWith(ProDevice);
+        var (_, closed) = WatchLid();
+        adverts.Raise(LidShut());
+        Assert.Empty(closed);
+    }
+
+    [Fact]
+    public void TwoSameModel_EventForTarget()
+    {
+        StartWith(ProDevice, Pro2Device with { IsConnected = true });
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen());
+        Assert.Equal([Pro2Id], opened);
+    }
+
+    [Fact]
+    public void UnpairedModel_NoLidEvent()
+    {
+        StartWith(MaxDevice);
+        var (opened, _) = WatchLid();
+        adverts.Raise(LidOpen());
+        Assert.Empty(opened);
+    }
+
+    [Fact]
+    public void NoLidCapability_NoEvent()
+    {
+        StartWith(ProDevice);
+        var (opened, _) = WatchLid();
+        var noCap = LidOpen() with { Model = ModelCatalog.Find("1420")! with { Capabilities = AppleCapabilities.None } };
+        Assert.Null(noCap.LidPopup);
+        adverts.Raise(noCap);
+        Assert.Empty(opened);
+    }
 }

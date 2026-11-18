@@ -20,6 +20,12 @@ public sealed class HeadphoneSource(
     public static readonly TimeSpan WindowLength = TimeSpan.FromSeconds(10);
     public static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(10);
 
+    /// <summary>A lid opening further away than this (weaker RSSI) is ignored, so a set across the room stays quiet.</summary>
+    public const short PopupMinRssi = -65;
+
+    /// <summary>The lid counts as closed once no lid-open advert has arrived for this long (the case sends several a second while open).</summary>
+    public static readonly TimeSpan LidSilence = TimeSpan.FromSeconds(3);
+
     readonly MatcherOptions matcherOptions = options ?? new MatcherOptions();
     readonly Lock gate = new();
     readonly Dictionary<string, ModelStream> streams = [];
@@ -33,6 +39,10 @@ public sealed class HeadphoneSource(
     ITimer? tick;
 
     public event Action? Changed;
+
+    public event Action<string>? LidOpened;
+
+    public event Action<string>? LidClosed;
 
     public IReadOnlyList<HeadphoneSnapshot> Current { get { lock (gate) return [.. published]; } }
 
@@ -122,7 +132,11 @@ public sealed class HeadphoneSource(
         Stop();
         lock (gate)
         {
-            foreach (var stream in streams.Values) stream.Tracker.Dispose();
+            foreach (var stream in streams.Values)
+            {
+                stream.Tracker.Dispose();
+                CloseLid(stream);
+            }
             foreach (var request in requests.Values) request.Timer?.Dispose();
             requests.Clear();
         }
@@ -181,6 +195,8 @@ public sealed class HeadphoneSource(
     {
         if (advert.Model is null) return;
         ModelStream stream;
+        string? lidDevice;
+        bool lidOpened, accepted;
         lock (gate)
         {
             if (!devices.Any(d => d.ModelId == advert.ModelId)) return;
@@ -191,10 +207,14 @@ public sealed class HeadphoneSource(
                 stream.Tracker.PlaybackChanged += _ => Publish();
                 streams[advert.ModelId] = stream;
             }
+            // Before the matcher: a case that was shut comes back on a new address the matcher may not accept yet.
+            lidDevice = TrackLid(stream, advert, out lidOpened);
             stream.Matcher.Observe(advert);
-            if (!stream.Matcher.Accept(advert)) return;
-            stream.Last = advert;
+            accepted = stream.Matcher.Accept(advert);
+            if (accepted) stream.Last = advert;
         }
+        if (lidDevice is not null) (lidOpened ? LidOpened : LidClosed)?.Invoke(lidDevice);
+        if (!accepted) return;
         stream.Tracker.OnAdvert(advert);
         Publish();
     }
@@ -253,6 +273,46 @@ public sealed class HeadphoneSource(
             IsInCase: fresh && advert!.BothInCase);
     }
 
+    /// <summary>
+    /// Follows the lid of a model's stream: opens (once) on a lid-open advert strong enough, closes on a
+    /// lid-shut advert or after <see cref="LidSilence"/> without a lid-open one. Returns the device whose
+    /// lid changed, if any. Caller holds <see cref="gate"/>.
+    /// </summary>
+    string? TrackLid(ModelStream stream, AppleAdvert advert, out bool opened)
+    {
+        opened = false;
+        if (advert.LidPopup is not bool open) return null;
+        if (!open) return CloseLid(stream);
+        if (stream.LidDevice is not null)
+        {
+            stream.LidTimer?.Change(LidSilence, Timeout.InfiniteTimeSpan);
+            return null;
+        }
+        if (advert.Rssi < PopupMinRssi || Target(advert.ModelId) is not { } target) return null;
+        var generation = ++stream.LidGeneration;
+        stream.LidDevice = target;
+        stream.LidTimer = time.CreateTimer(_ => LidSilent(stream, generation), null, LidSilence, Timeout.InfiniteTimeSpan);
+        opened = true;
+        return target;
+    }
+
+    /// <summary>Caller holds <see cref="gate"/>.</summary>
+    static string? CloseLid(ModelStream stream)
+    {
+        var device = stream.LidDevice;
+        stream.LidDevice = null;
+        stream.LidTimer?.Dispose();
+        stream.LidTimer = null;
+        return device;
+    }
+
+    void LidSilent(ModelStream stream, int generation)
+    {
+        string? device;
+        lock (gate) device = stream.LidGeneration == generation ? CloseLid(stream) : null;
+        if (device is not null) LidClosed?.Invoke(device);
+    }
+
     /// <summary>The device a model's advert stream is shown on. Caller holds <see cref="gate"/>.</summary>
     string? Target(string modelId)
     {
@@ -274,5 +334,8 @@ public sealed class HeadphoneSource(
         public AdvertMatcher Matcher { get; } = matcher;
         public HeadphoneTracker Tracker { get; } = tracker;
         public AppleAdvert? Last { get; set; }
+        public string? LidDevice { get; set; }   // the device whose lid is open, null while shut
+        public ITimer? LidTimer { get; set; }
+        public int LidGeneration { get; set; }
     }
 }
