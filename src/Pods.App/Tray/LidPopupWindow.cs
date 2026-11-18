@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
@@ -27,6 +28,7 @@ internal sealed partial class LidPopupWindow : PopupWindow
     readonly TrayHover.Rect? iconRect;
     readonly Stopwatch slideClock = new();
     int restY, offY, x, currentY, slideFrom;
+    RectInt32 outer;
     bool leaving, closed;
 
     /// <param name="iconRect">The tray icon, to pick its screen; null uses the main screen.</param>
@@ -34,16 +36,19 @@ internal sealed partial class LidPopupWindow : PopupWindow
     {
         Card = card;
         this.iconRect = iconRect;
+        // Until the tile draws, and in the window's corners, show the tile's colour rather than a default one.
+        if (Content is Panel root) root.Background = (Brush)Application.Current.Resources["PodsCardBackground"];
         close.Click += (_, _) => Dismiss();
         timer = DispatcherQueue.CreateTimer();
         timer.Interval = ShowFor;
         timer.IsRepeating = false;
         timer.Tick += (_, _) => Dismiss();
         View.PointerEntered += (_, _) => timer.Stop();
-        View.PointerExited += (_, e) =>
+        View.PointerExited += (_, _) =>
         {
-            // Exits bubble up from the tile's parts too; only the popup's own exit means the pointer left.
-            if (!leaving && ReferenceEquals(e.OriginalSource, View)) timer.Start();
+            // Exits bubble up from the tile's parts, and the pointer's last position is still inside, so
+            // ask where the cursor really is.
+            if (!leaving && !CursorOverWindow()) timer.Start();
         };
         Closed += (_, _) =>
         {
@@ -91,11 +96,10 @@ internal sealed partial class LidPopupWindow : PopupWindow
         var name = Strings.Get("PopupClose");
         ToolTipService.SetToolTip(close, name);
         AutomationProperties.SetName(close, name);
-        // Framed like the flyout: the tile on the flyout's page background.
+        // The tile alone; the window's rounded corners take its colour.
         return new Border
         {
-            Padding = new Thickness(12),
-            Background = (Brush)Application.Current.Resources["PodsPageBackground"],
+            Background = (Brush)Application.Current.Resources["PodsCardBackground"],
             Child = new DeviceTile { Card = card, Corner = close },
         };
     }
@@ -110,6 +114,7 @@ internal sealed partial class LidPopupWindow : PopupWindow
         x = work.X + (work.Width - size.Width) / 2;
         restY = work.Y + work.Height - size.Height - (int)(Gap * Scale);
         offY = display.OuterBounds.Y + display.OuterBounds.Height;   // just below the screen
+        outer = display.OuterBounds;
         AppWindow.ResizeClient(size);
         currentY = offY;
         AppWindow.Move(new PointInt32(x, offY));
@@ -117,6 +122,7 @@ internal sealed partial class LidPopupWindow : PopupWindow
 
     protected override void OnShown()
     {
+        TuckUnderTaskbar();
         StartSlide();
         timer.Start();
     }
@@ -142,4 +148,53 @@ internal sealed partial class LidPopupWindow : PopupWindow
         CompositionTarget.Rendering -= OnSlideFrame;
         if (leaving) Close();
     }
+
+    /// <summary>
+    /// Puts the popup directly beneath this screen's taskbar in the window stack (still above other
+    /// windows), so it rises from behind the taskbar instead of over it.
+    /// </summary>
+    void TuckUnderTaskbar()
+    {
+        foreach (var cls in (string[])["Shell_TrayWnd", "Shell_SecondaryTrayWnd"])
+        {
+            for (var bar = FindWindowEx(0, 0, cls, null); bar != 0; bar = FindWindowEx(0, bar, cls, null))
+            {
+                if (!GetWindowRect(bar, out var r)) continue;
+                var onScreen = r.Left < outer.X + outer.Width && r.Right > outer.X && r.Top < outer.Y + outer.Height && r.Bottom > outer.Y;
+                if (!onScreen) continue;
+                SetWindowPos(Hwnd, bar, 0, 0, 0, 0, SwpNoSize | SwpNoMove | SwpNoActivate);
+                return;
+            }
+        }
+    }
+
+    bool CursorOverWindow()
+    {
+        if (!GetCursorPos(out var p)) return false;
+        var (at, size) = (AppWindow.Position, AppWindow.Size);
+        return p.X >= at.X && p.X < at.X + size.Width && p.Y >= at.Y && p.Y < at.Y + size.Height;
+    }
+
+    const uint SwpNoSize = 0x1, SwpNoMove = 0x2, SwpNoActivate = 0x10;
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct Win32Rect { public int Left, Top, Right, Bottom; }
+
+    [LibraryImport("user32.dll", EntryPoint = "FindWindowExW", StringMarshalling = StringMarshalling.Utf16)]
+    private static partial nint FindWindowEx(nint parent, nint after, string cls, string? title);
+
+    [StructLayout(LayoutKind.Sequential)]
+    struct Win32Point { public int X, Y; }
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetCursorPos(out Win32Point point);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetWindowRect(nint hwnd, out Win32Rect rect);
+
+    [LibraryImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool SetWindowPos(nint hwnd, nint after, int x, int y, int cx, int cy, uint flags);
 }

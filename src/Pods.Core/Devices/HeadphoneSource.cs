@@ -274,23 +274,29 @@ public sealed class HeadphoneSource(
     }
 
     /// <summary>
-    /// Follows the lid of a model's stream: opens (once) on a lid-open advert strong enough, closes on a
-    /// lid-shut advert or after <see cref="LidSilence"/> without a lid-open one. Returns the device whose
-    /// lid changed, if any. Caller holds <see cref="gate"/>.
+    /// Follows the lid of a model's stream. Opens (once) on a lid-open advert strong enough. While open,
+    /// only adverts from the addresses that reported the opening count: one of them saying the lid shut
+    /// with both pods inside closes it, any of them keeps it from going silent, and
+    /// <see cref="LidSilence"/> without them closes it. So earbuds taken out of the open case, the end
+    /// of the AirPods Max's short transient, or another set nearby do not close it. Returns the device
+    /// whose lid changed, if any. Caller holds <see cref="gate"/>.
     /// </summary>
     string? TrackLid(ModelStream stream, AppleAdvert advert, out bool opened)
     {
         opened = false;
         if (advert.LidPopup is not bool open) return null;
-        if (!open) return CloseLid(stream);
         if (stream.LidDevice is not null)
         {
+            if (open) stream.LidAddresses.Add(advert.Address);
+            if (!stream.LidAddresses.Contains(advert.Address)) return null;
+            if (!open && advert.BothInCase) return CloseLid(stream);
             stream.LidTimer?.Change(LidSilence, Timeout.InfiniteTimeSpan);
             return null;
         }
-        if (advert.Rssi < PopupMinRssi || Target(advert.ModelId) is not { } target) return null;
+        if (!open || advert.Rssi < PopupMinRssi || Target(advert.ModelId) is not { } target) return null;
         var generation = ++stream.LidGeneration;
         stream.LidDevice = target;
+        stream.LidAddresses.Add(advert.Address);
         stream.LidTimer = time.CreateTimer(_ => LidSilent(stream, generation), null, LidSilence, Timeout.InfiniteTimeSpan);
         opened = true;
         return target;
@@ -301,6 +307,7 @@ public sealed class HeadphoneSource(
     {
         var device = stream.LidDevice;
         stream.LidDevice = null;
+        stream.LidAddresses.Clear();
         stream.LidTimer?.Dispose();
         stream.LidTimer = null;
         return device;
@@ -336,6 +343,7 @@ public sealed class HeadphoneSource(
         public AppleAdvert? Last { get; set; }
         public string? LidDevice { get; set; }   // the device whose lid is open, null while shut
         public ITimer? LidTimer { get; set; }
+        public HashSet<ulong> LidAddresses { get; } = [];   // the pods that reported the opening
         public int LidGeneration { get; set; }
     }
 }

@@ -457,7 +457,10 @@ public sealed class HeadphoneSourceTests : IDisposable
     static string ProId => ProDevice.Id;
     static readonly PairedDevice Pro2Device = new(Pro2Id, "Second Pro", "1420", false);
     static AppleAdvert LidOpen(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x75), rssi, address)!;
-    static AppleAdvert LidShut(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x01), rssi, address)!;
+    // Both pods still in the case, lid counter past 8: the lid has shut (measured 2026-11-18).
+    static AppleAdvert LidShut(short rssi = -50, ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x75, cap: 0x09), rssi, address)!;
+    static AppleAdvert PodsOut(ulong address = 1) => AdvertDecoder.Decode(Frames.Pro2(0x21), -50, address)!;
+    static AppleAdvert MaxLidTransient(ulong address = 2) => AdvertDecoder.Decode(Frames.Make(0x0a, 0x20, 0x02, 0x09, 0x80, cap: 0x83), -50, address)!;
 
     (List<string> Opened, List<string> Closed) WatchLid()
     {
@@ -472,6 +475,51 @@ public sealed class HeadphoneSourceTests : IDisposable
     {
         Assert.True(LidOpen().LidPopup);
         Assert.False(LidShut().LidPopup);
+        Assert.True(LidShut().BothInCase);
+        Assert.False(PodsOut().LidPopup);
+        Assert.True(MaxLidTransient().LidPopup);
+        Assert.False(Max().LidPopup);
+    }
+
+    [Fact]
+    public void LidShutFromAnotherSet_Ignored()
+    {
+        StartWith(ProDevice);
+        var (opened, closed) = WatchLid();
+        adverts.Raise(LidOpen(address: 1));
+        adverts.Raise(LidShut(address: 9));   // someone else's case, or earbuds worn nearby
+        adverts.Raise(LidOpen(address: 1));
+        Assert.Single(opened);
+        Assert.Empty(closed);
+    }
+
+    [Fact]
+    public void PodsTakenOut_LidStaysOpen()
+    {
+        StartWith(ProDevice);
+        var (opened, closed) = WatchLid();
+        adverts.Raise(LidOpen());
+        for (var i = 0; i < 30; i++)
+        {
+            time.Advance(TimeSpan.FromMilliseconds(300));
+            adverts.Raise(PodsOut());
+        }
+        adverts.Raise(LidOpen());   // one pod back in the open case
+        Assert.Single(opened);
+        Assert.Empty(closed);
+    }
+
+    [Fact]
+    public void MaxTransientEnd_DoesNotClose()
+    {
+        StartWith(MaxDevice);
+        var (opened, closed) = WatchLid();
+        adverts.Raise(MaxLidTransient());
+        adverts.Raise(Max());
+        Assert.Equal([MaxId], opened);
+        Assert.Empty(closed);
+        time.Advance(HeadphoneSource.LidSilence);
+        Assert.Equal([MaxId], closed);
     }
 
     [Fact]
