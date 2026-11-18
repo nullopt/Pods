@@ -45,13 +45,18 @@ These have:
 
 If you try Pods with another model, please open an issue saying what worked and what didn't.
 
-### Optional: noise control and exact battery (experimental)
+### Optional: noise control and exact battery (experimental, unverified)
 
-With the optional [PodsAap driver](driver/README.md), Pods also talks Apple's accessory protocol
+With the optional [PodsAap driver](driver/README.md), Pods can also talk Apple's accessory protocol
 to connected AirPods: noise control (Noise Cancellation, Adaptive, Transparency, Off) from the
-tile, battery to the exact percent, and ear detection for both earbuds. The driver is not signed by
-Microsoft yet, so it needs Windows Test Mode, which needs Secure Boot off. Without it, Pods works as
-above.
+tile, battery to the exact percent, and ear detection for both earbuds.
+
+This is for tinkerers only, and is **not confirmed to work on real AirPods**. The protocol was
+reverse-engineered from other projects, the app code is tested, but the full exchange has never run
+against hardware. There is also no free way to get a kernel driver signed by Microsoft, so loading
+it needs Windows Test Mode (Secure Boot off) and will keep needing it. See the
+[driver README](driver/README.md) for the setup and the risks. Everything above works with no driver
+and no Test Mode; this only adds to it.
 
 ## Building
 

@@ -12,11 +12,18 @@ nothing about AAP itself. License: see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTI
 
 ## Why Test Mode
 
-Windows loads a kernel driver only if Microsoft has signed it. That needs an EV code-signing
-certificate and Microsoft's attestation signing, which this project does not have yet. Until then
-the driver is signed with a self-made test certificate, which Windows accepts only with test
-signing on ("Test Mode", shown as a watermark on the desktop). Test signing in turn needs Secure Boot
-off.
+Windows loads a kernel driver only if Microsoft has signed it. That needs a code-signing
+certificate (usually EV, issued to a registered business) and Microsoft's attestation signing. A
+free project has no way to pay for that, so the driver is signed with a self-made test certificate
+instead, which Windows accepts only with test signing on ("Test Mode", shown as a watermark on the
+desktop). Test signing in turn needs Secure Boot off. If someone ever funds proper signing, this
+requirement goes away; until then it stays.
+
+> **Status: experimental and unproven.** The driver builds and test-signs, and the app-side code is
+> unit-tested, but the end-to-end exchange has never been run against real AirPods. The AAP frame
+> formats come from reverse-engineering (MagicPods static analysis, cross-checked with LibrePods'
+> macOS captures); they may be wrong. Expect to read the raw `r:`/`s:` frames in the logs and fix
+> the parser. Enabling Test Mode and running an unproven kernel driver is at your own risk.
 
 ## Build (no admin)
 
