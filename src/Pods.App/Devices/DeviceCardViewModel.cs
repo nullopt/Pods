@@ -29,6 +29,8 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         this.settings = settings;
         this.settingsChanged = settingsChanged;
         Key = snapshot.Key;
+        ShowLidPopupSetting = LidPopupSetting.Supported(snapshot.ModelId);
+        lidPopup = LidPopupSetting.IsOn(settings, Key, snapshot.ModelId);
         Update(snapshot, adapterAvailable);
     }
 
@@ -97,6 +99,21 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         settingsChanged();
     }
 
+    /// <summary>The model can show the lid-open popup, so the tile offers the switch.</summary>
+    public bool ShowLidPopupSetting { get; }
+
+    bool lidPopup;
+    /// <summary>Show the popup when this device's case opens.</summary>
+    public bool LidPopup
+    {
+        get => lidPopup;
+        set
+        {
+            if (!SetProperty(ref lidPopup, value)) return;
+            Save(() => LidPopupSetting.Set(settings, Key, value));
+        }
+    }
+
     [RelayCommand]
     void UseAppDefault()
     {
@@ -109,7 +126,7 @@ internal sealed partial class DeviceCardViewModel : ObservableObject
         try { write(); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
-            Log.Warning(e, "Saving the low battery setting failed");
+            Log.Warning(e, "Saving a device setting failed");
         }
     }
 

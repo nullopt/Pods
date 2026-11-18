@@ -272,6 +272,8 @@
                                 </StackPanel>
                                 <HyperlinkButton x:Uid="TileUseDefault" Padding="0" Command="{x:Bind UseAppDefaultCommand}"
                                                  Visibility="{x:Bind HasOwnThreshold, Mode=OneWay}" />
+                                <ToggleSwitch x:Uid="TileLidPopup" Margin="0,6,0,0" IsOn="{x:Bind LidPopup, Mode=TwoWay}"
+                                              Visibility="{x:Bind ShowLidPopupSetting}" />
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>

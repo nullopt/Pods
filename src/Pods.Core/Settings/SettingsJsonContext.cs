@@ -6,6 +6,7 @@ namespace Pods.Core.Settings;
 [JsonSerializable(typeof(bool))]
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(int?))]
+[JsonSerializable(typeof(bool?))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(EarDetectionMode))]
 public sealed partial class SettingsJsonContext : JsonSerializerContext;

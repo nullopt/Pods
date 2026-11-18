@@ -17,6 +17,8 @@ public static class SettingKeys
     public static readonly Setting<bool> KeepAudioAwake = new("keepAudioAwake", false, Json.Boolean, true);
     public static readonly Setting<bool> WindowsBatteryFallback = new("windowsBatteryFallback", false, Json.Boolean, true);
     public static readonly Setting<bool> SearchByRssi = new("searchByRssi", false, Json.Boolean, true);
+    /// <summary>Lid-open popup; null follows the model's default (see <see cref="LidPopupSetting"/>).</summary>
+    public static readonly Setting<bool?> LidPopup = new("lidPopup", null, Json.NullableBoolean, true);
     public static readonly Setting<string?> CustomPicture = new("customPicture", null, Json.String, true);
 
     /// <summary>Serilog minimum level name; global only.</summary>
