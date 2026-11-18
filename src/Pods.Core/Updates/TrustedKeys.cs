@@ -7,5 +7,14 @@ namespace Pods.Core.Updates;
 /// </summary>
 public static class TrustedKeys
 {
-    public static IReadOnlyList<string> All { get; } = [];
+    public static IReadOnlyList<string> All { get; } =
+    [
+        // nullopt, created 2026-11-18
+        """
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEuYMG+LlTrdMG4OdUsB/97mGNp6g9
+        bKv1UT7StU15tlIfbSm1fMfKM6ZKaZgPucB5LMmmoTLsJZBhQqZv8a1REQ==
+        -----END PUBLIC KEY-----
+        """,
+    ];
 }
