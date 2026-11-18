@@ -36,8 +36,9 @@ Do these in order, in an **admin PowerShell**:
 1. **Suspend BitLocker for two restarts**, or the boot changes below make Windows ask for your
    BitLocker recovery key:
    `manage-bde -protectors -disable C: -RebootCount 2`
-2. **Turn Secure Boot off** in the firmware (UEFI/BIOS) setup: restart, enter setup (often F2, F10,
-   Del or Esc), find Secure Boot (usually under Boot or Security), set it to Disabled, save and exit.
+2. **Turn Secure Boot off** in the firmware (UEFI/BIOS) setup: `shutdown /r /fw /t 0` restarts
+   straight into it (or press F2, F10, Del or Esc while the PC starts). Find Secure Boot (usually
+   under Boot or Security), set it to Disabled, save and exit.
    (Windows refuses the next step while Secure Boot is on.)
 3. Back in Windows, **turn test signing on**: `bcdedit /set testsigning on`
 4. **Restart.** "Test Mode" appears in the corner of the desktop. BitLocker protection resumes by

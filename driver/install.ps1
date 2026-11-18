@@ -17,7 +17,11 @@ $ErrorActionPreference = 'Stop'
 $options = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control').SystemStartOptions
 if ($options -notmatch 'TESTSIGNING') {
     Write-Host 'Test signing is off, so Windows would refuse to load this driver.' -ForegroundColor Yellow
-    Write-Host 'Follow "One-time setup" in driver\README.md (bcdedit /set testsigning on, then reboot) and run this again.'
+    $secureBoot = (Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State' -ErrorAction SilentlyContinue).UEFISecureBootEnabled
+    if ($secureBoot -eq 1) {
+        Write-Host 'Secure Boot is on, and Windows will not turn test signing on until it is off.'
+    }
+    Write-Host 'Follow "One-time setup" in driver\README.md (BitLocker, Secure Boot, bcdedit /set testsigning on, reboot) and run this again.'
     exit 1
 }
 
