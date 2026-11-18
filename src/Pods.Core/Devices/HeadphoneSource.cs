@@ -1,3 +1,4 @@
+using Pods.Core.Aap;
 using Pods.Core.Apple;
 using Pods.Core.Tracking;
 
@@ -12,10 +13,14 @@ namespace Pods.Core.Devices;
 /// values and removals are ignored until it returns. A connect or disconnect request is pending
 /// until Windows reports the requested state or <see cref="RequestTimeout"/> passes; a failure is
 /// shown until the device's state next changes. Lid and auto-connect signals are raised as events;
-/// the app decides from its settings whether to act on them.
+/// the app decides from its settings whether to act on them. With an <see cref="AapHub"/>, connected
+/// devices that have the AAP driver also report over AAP: its exact battery replaces the advert's
+/// part by part while known, its ear state replaces the advert's, and noise control becomes available.
+/// The source owns the hub and disposes it.
 /// </summary>
 public sealed class HeadphoneSource(
-    IPairedDeviceSource paired, IAppleAdvertSource adverts, IConnectionControl control, TimeProvider time, MatcherOptions? options = null)
+    IPairedDeviceSource paired, IAppleAdvertSource adverts, IConnectionControl control, TimeProvider time, MatcherOptions? options = null,
+    AapHub? aap = null)
     : IHeadphoneSource, IDisposable
 {
     public static readonly TimeSpan WindowLength = TimeSpan.FromSeconds(10);
@@ -59,6 +64,7 @@ public sealed class HeadphoneSource(
             started = true;
             paired.Changed += OnPairedChanged;
         }
+        if (aap is not null) aap.Changed += Publish;
         paired.Start();
         OnPairedChanged();
     }
@@ -71,6 +77,11 @@ public sealed class HeadphoneSource(
             started = false;
             paired.Changed -= OnPairedChanged;
         }
+        if (aap is not null)
+        {
+            aap.Changed -= Publish;
+            aap.Update([]);
+        }
         UpdateScanning();
         paired.Stop();
     }
@@ -78,6 +89,8 @@ public sealed class HeadphoneSource(
     public void Connect(string key) => Request(key, ConnectionRequest.Connecting);
 
     public void Disconnect(string key) => Request(key, ConnectionRequest.Disconnecting);
+
+    public void SetNoiseControl(string key, NoiseControlMode mode) => aap?.SetNoiseControl(key, mode);
 
     void Request(string key, ConnectionRequest kind)
     {
@@ -143,10 +156,12 @@ public sealed class HeadphoneSource(
             foreach (var request in requests.Values) request.Timer?.Dispose();
             requests.Clear();
         }
+        aap?.Dispose();
     }
 
     void OnPairedChanged()
     {
+        List<PairedDevice> forAap;
         lock (gate)
         {
             adapterAvailable = paired.IsAdapterAvailable;
@@ -164,7 +179,9 @@ public sealed class HeadphoneSource(
                 request.Timer?.Dispose();
                 requests.Remove(key);
             }
+            forAap = started && adapterAvailable ? devices : [];
         }
+        aap?.Update(forAap);
         UpdateScanning();
         Publish();
     }
@@ -266,16 +283,32 @@ public sealed class HeadphoneSource(
             : device.IsConnected ? DeviceState.Connected
             : fresh ? DeviceState.Disconnected
             : DeviceState.Searching;
+        var aapState = state == DeviceState.Connected ? aap?.StateOf(device.Id) : null;
+        var model = ModelCatalog.Find(device.ModelId);
         return new HeadphoneSnapshot(
             Key: device.Id,
             Name: device.Name,
             ModelId: device.ModelId,
             Colour: advert?.Colour ?? "",
             State: state,
-            Battery: advert is null ? null : stream!.Tracker.Battery,
-            Playback: advert is null ? null : stream!.Tracker.Playback,
+            Battery: Overlay(aapState?.Battery, advert is null ? null : stream!.Tracker.Battery),
+            Playback: aapState?.Playback ?? (advert is null ? null : stream!.Tracker.Playback),
             IsSingleBattery: ModelCatalog.SingleBatteryIds.Contains(device.ModelId),
-            IsInCase: fresh && advert!.BothInCase);
+            IsInCase: fresh && advert!.BothInCase,
+            CanControlNoise: aapState is { Ready: true } && model is not null && model.Capabilities.HasFlag(AppleCapabilities.NoiseControl),
+            NoiseControl: aapState?.NoiseControl);
+    }
+
+    /// <summary>AAP's exact values where it knows them, with their charging flags; the advert's elsewhere.</summary>
+    static PodBattery? Overlay(PodBattery? exact, PodBattery? advert)
+    {
+        if (exact is not { } a) return advert;
+        var b = advert ?? new PodBattery(null, null, null, false, false, false);
+        return new PodBattery(
+            a.Left ?? b.Left, a.Right ?? b.Right, a.Case ?? b.Case,
+            a.Left is null ? b.LeftCharging : a.LeftCharging,
+            a.Right is null ? b.RightCharging : a.RightCharging,
+            a.Case is null ? b.CaseCharging : a.CaseCharging);
     }
 
     /// <summary>

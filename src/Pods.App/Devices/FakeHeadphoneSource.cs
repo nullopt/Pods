@@ -1,5 +1,6 @@
 #if DEBUG
 using Microsoft.UI.Dispatching;
+using Pods.Core.Aap;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 
@@ -14,7 +15,8 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
     readonly List<HeadphoneSnapshot> devices =
     [
         new("de0000000001", "AirPods Pro 2", "1420", "00", DeviceState.Connected,
-            new PodBattery(95, 85, 45, false, true, false), Playback.AllIn, IsSingleBattery: false),
+            new PodBattery(95, 85, 45, false, true, false), Playback.AllIn, IsSingleBattery: false,
+            CanControlNoise: true, NoiseControl: NoiseControlMode.NoiseCancellation),
         new("de0000000002", "AirPods Max", "0a20", "0f", DeviceState.Disconnected,
             new PodBattery(60, null, null, false, false, false), Playback.NoneIn, IsSingleBattery: true),
     ];
@@ -60,6 +62,14 @@ internal sealed class FakeHeadphoneSource(DispatcherQueue ui) : IHeadphoneSource
     public void Connect(string key) => Request(key, ConnectionRequest.Connecting, DeviceState.Connected);
 
     public void Disconnect(string key) => Request(key, ConnectionRequest.Disconnecting, DeviceState.Disconnected);
+
+    public void SetNoiseControl(string key, NoiseControlMode mode)
+    {
+        var index = devices.FindIndex(d => d.Key == key);
+        if (index < 0 || !devices[index].CanControlNoise) return;
+        devices[index] = devices[index] with { NoiseControl = mode };
+        Changed?.Invoke();
+    }
 
     void Request(string key, ConnectionRequest request, DeviceState result)
     {

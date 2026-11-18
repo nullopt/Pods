@@ -45,6 +45,14 @@ These have:
 
 If you try Pods with another model, please open an issue saying what worked and what didn't.
 
+### Optional: noise control and exact battery (experimental)
+
+With the optional [PodsAap driver](driver/README.md), Pods also talks Apple's accessory protocol
+to connected AirPods: noise control (Noise Cancellation, Adaptive, Transparency, Off) from the
+tile, battery to the exact percent, and ear detection for both earbuds. The driver is not signed by
+Microsoft yet, so it needs Windows Test Mode, which needs Secure Boot off. Without it, Pods works as
+above.
+
 ## Building
 
 Requires the .NET 10 SDK on Windows 10 2004 or later (x64). No Visual Studio, Windows SDK,

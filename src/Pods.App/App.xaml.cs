@@ -16,6 +16,7 @@ using Pods.App.Media;
 using Pods.App.Tray;
 using Pods.App.Updates;
 using Pods.App.Views;
+using Pods.Core.Aap;
 using Pods.Core.Apple;
 using Pods.Core.Devices;
 using Pods.Core.Media;
@@ -80,7 +81,8 @@ public partial class App : Application
         };
         RegisterNotifications();
         var paired = new WindowsPairedDeviceSource();
-        Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System);
+        Headphones = new HeadphoneSource(paired, new BleAdvertSource(), new KsConnectionControl(paired), TimeProvider.System,
+            aap: CreateAapHub(paired));
         AttachHeadphones();
         media = CreateMediaAutomation();
         Headphones.Start();
@@ -363,6 +365,29 @@ public partial class App : Application
                 OpenFlyout();
                 break;
         }
+    }
+
+    /// <summary>
+    /// AAP through the L2CAP driver, where one is installed. Frames are logged at Debug level. A
+    /// channel that keeps failing is retried every few seconds, so only its first failure is a warning.
+    /// </summary>
+    static AapHub CreateAapHub(WindowsPairedDeviceSource paired)
+    {
+        var hub = new AapHub(new AapDriverChannelFactory(paired), TimeProvider.System);
+        var warned = new HashSet<string>();
+        hub.Failed += (key, ex) =>
+        {
+            bool first;
+            lock (warned) first = warned.Add(key);
+            if (first) Log.Warning(ex, "AAP channel to {Device} failed; retrying", key);
+            else Log.Debug(ex, "AAP channel to {Device} failed again", key);
+        };
+        hub.Frame += (key, incoming, frame) =>
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+                Log.Debug("AAP {Device} {Direction}: {Frame}", key, incoming ? "r" : "s", Convert.ToHexString(frame.Span));
+        };
+        return hub;
     }
 
     static MediaAutomation CreateMediaAutomation()
