@@ -14,7 +14,8 @@ namespace Pods.App.Tray;
 
 /// <summary>
 /// Shown when a headset's case opens: its flyout tile at the bottom centre of the screen. It slides up
-/// from below the screen like the iPhone's card, without taking focus, and slides away after
+/// from below the screen like the iPhone's card (appears in place while animations are off), without
+/// taking focus, and slides away after
 /// <see cref="ShowFor"/> (held while the pointer is over it), on its close button, or when the lid shuts.
 /// </summary>
 internal sealed partial class LidPopupWindow : PopupWindow
@@ -130,9 +131,19 @@ internal sealed partial class LidPopupWindow : PopupWindow
 
     void StartSlide()
     {
+        CompositionTarget.Rendering -= OnSlideFrame;
+        if (!App.AnimationsOn)
+        {
+            if (leaving) Close();
+            else
+            {
+                currentY = restY;
+                AppWindow.Move(new PointInt32(x, restY));
+            }
+            return;
+        }
         slideFrom = currentY;   // a dismissal mid-entrance turns back from where it is
         slideClock.Restart();
-        CompositionTarget.Rendering -= OnSlideFrame;
         CompositionTarget.Rendering += OnSlideFrame;
     }
 

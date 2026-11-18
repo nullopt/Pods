@@ -33,6 +33,7 @@
   <data name="AppPlayOnConnect.Text" xml:space="preserve"><value>Play on connect</value></data>
   <data name="AppAutoConnect.Text" xml:space="preserve"><value>Auto connect</value></data>
   <data name="AppCheckForUpdates.Text" xml:space="preserve"><value>Check for updates</value></data>
+  <data name="AppAnimations.Text" xml:space="preserve"><value>Animations</value></data>
   <data name="UpdateAvailableTitle" xml:space="preserve"><value>Update available</value></data>
   <data name="UpdateAvailableBody" xml:space="preserve"><value>Pods {0} is available.</value></data>
   <data name="UpdateButton" xml:space="preserve"><value>Update</value></data>

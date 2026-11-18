@@ -35,6 +35,14 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void Animations_DefaultsOn_GlobalOnly()
+    {
+        var s = SettingsStore.Load(dir);
+        Assert.True(s.Get(SettingKeys.Animations));
+        Assert.Throws<ArgumentException>(() => s.SetForDevice(SettingKeys.Animations, Dev, false));
+    }
+
+    [Fact]
     public void GlobalChange_AppliesToDevicesWithoutOverride()
     {
         var s = SettingsStore.Load(dir);

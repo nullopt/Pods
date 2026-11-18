@@ -71,6 +71,11 @@ internal sealed partial class TrayFlyoutWindow : TrayAnchoredWindow
     protected override void OnShown()
     {
         var visual = ElementCompositionPreview.GetElementVisual(scroller);
+        if (!App.AnimationsOn)
+        {
+            visual.Opacity = 1;
+            return;
+        }
         var compositor = visual.Compositor;
         var ease = compositor.CreateCubicBezierEasingFunction(new Vector2(0.1f, 0.9f), new Vector2(0.2f, 1));
         var fade = compositor.CreateScalarKeyFrameAnimation();

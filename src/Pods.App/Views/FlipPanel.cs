@@ -12,7 +12,7 @@ namespace Pods.App.Views;
 
 /// <summary>
 /// Two faces in one place; setting <see cref="IsFlipped"/> turns the panel about its vertical axis
-/// to show the back (a short 3D turn). Both faces stay laid out and the panel takes the front's
+/// to show the back (a short 3D turn, or at once while animations are off). Both faces stay laid out and the panel takes the front's
 /// height (the wider face's width), so it does not jump when it turns; a taller back gets only that
 /// height and should scroll. Each face sits in a host that, while hidden, is
 /// transparent, disabled (out of the Tab order) and hidden from screen readers.
@@ -89,7 +89,7 @@ internal sealed partial class FlipPanel : Grid
 
     void Turn()
     {
-        if (!IsLoaded || Front is null || Back is null || ActualWidth == 0)
+        if (!IsLoaded || Front is null || Back is null || ActualWidth == 0 || !App.AnimationsOn)
         {
             Snap();
             return;

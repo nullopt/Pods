@@ -52,6 +52,9 @@ public partial class App : Application
 
     public SettingsStore Settings { get; private set; } = null!;
 
+    /// <summary>The Animations setting; on before settings load (design time, tests).</summary>
+    internal static bool AnimationsOn => Instance?.Settings is not { } settings || settings.Get(SettingKeys.Animations);
+
     /// <summary>Devices shown in the flyout and tray card; scanning runs while the app runs.</summary>
     internal IHeadphoneSource Headphones { get; private set; } = null!;
 

@@ -24,6 +24,12 @@ public static class SettingKeys
     /// <summary>Daily check of GitHub Releases for a signed update; global only.</summary>
     public static readonly Setting<bool> CheckForUpdates = new("checkForUpdates", true, Json.Boolean, false);
 
+    /// <summary>
+    /// Spinning artwork, the flyout's entrance, tile flips and the lid popup's slide; off shows each at
+    /// rest, and artwork as a still, which also saves decoding sprite sheets. Global only.
+    /// </summary>
+    public static readonly Setting<bool> Animations = new("animations", true, Json.Boolean, false);
+
     /// <summary>Serilog minimum level name; global only.</summary>
     public static readonly Setting<string> LogLevel = new("logLevel", "Warning", Json.String, false);
 }

@@ -232,6 +232,12 @@
             </Grid>
             <Grid ColumnSpacing="8">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <TextBlock x:Name="AppAnimationsLabel" x:Uid="AppAnimations" Style="{StaticResource PodsRowLabel}" />
+                <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.Animations, Mode=TwoWay}"
+                              AutomationProperties.LabeledBy="{Binding ElementName=AppAnimationsLabel}" />
+            </Grid>
+            <Grid ColumnSpacing="8">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <TextBlock x:Name="AppUpdatesLabel" x:Uid="AppCheckForUpdates" Style="{StaticResource PodsRowLabel}" />
                 <ToggleSwitch Style="{StaticResource PodsRowToggle}" IsOn="{x:Bind ViewModel.AppSettings.CheckForUpdates, Mode=TwoWay}"
                               AutomationProperties.LabeledBy="{Binding ElementName=AppUpdatesLabel}" />

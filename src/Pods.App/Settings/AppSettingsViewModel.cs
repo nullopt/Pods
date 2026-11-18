@@ -28,6 +28,7 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
         playOnConnect = settings.Get(SettingKeys.PlayOnConnect);
         autoConnect = settings.Get(SettingKeys.AutoConnect);
         checkForUpdates = settings.Get(SettingKeys.CheckForUpdates);
+        animations = settings.Get(SettingKeys.Animations);
 
         var level = settings.Get(SettingKeys.LogLevel);
         var index = SettingChoices.LogLevels.ToList().FindIndex(l => l.Equals(level, StringComparison.OrdinalIgnoreCase));
@@ -93,6 +94,14 @@ internal sealed partial class AppSettingsViewModel : ObservableObject
             if (!SetProperty(ref checkForUpdates, value)) return;
             Save(() => settings.SetGlobal(SettingKeys.CheckForUpdates, value));
         }
+    }
+
+    bool animations;
+    /// <summary>Spinning artwork and motion; tiles refresh so their artwork stops or starts at once.</summary>
+    public bool Animations
+    {
+        get => animations;
+        set => SetDefault(ref animations, value, () => settings.SetGlobal(SettingKeys.Animations, value));
     }
 
     /// <summary>Writes a default, then lets devices that follow it show the new value.</summary>
